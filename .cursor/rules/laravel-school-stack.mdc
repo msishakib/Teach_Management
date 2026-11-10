@@ -1,0 +1,20 @@
+---
+description: Laravel 11 school/coaching stack, architecture, and delivery checklist
+alwaysApply: true
+---
+
+# Stack & architecture
+
+Stack: Laravel 11, MySQL 8, Filament v3 (admin/teacher/student panels), spatie/laravel-permission, Pest or PHPUnit.
+
+- Use Form Requests, Policies, Services (`app/Services`), and Enums.
+- Keep Filament Resources / controllers thin — business logic lives in Services.
+- Soft deletes for students, teachers, courses only.
+- Never soft-delete or edit posted journal entries — reverse with a new reversing entry.
+- Write a feature test for every Service that moves money.
+
+## After each task
+
+List:
+1. Files created/changed
+2. Commands the user must run (e.g. `php artisan migrate`, `php artisan test`, `composer require …`)

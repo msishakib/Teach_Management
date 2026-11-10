@@ -1,0 +1,23 @@
+---
+description: Money columns, DB transactions, and immutable posted journals
+globs: app/Services/**/*.php,app/Models/**/*.php,database/migrations/**/*.php,tests/**/*.php
+alwaysApply: false
+---
+
+# Money & accounting
+
+- All money columns: `DECIMAL(15,2)`. Never `float` / `double`.
+- Every multi-table write (fees, vouchers, journals) must run inside `DB::transaction()`.
+- Posted journal entries are immutable — do not update/delete; post a reversing journal instead.
+
+```php
+// ❌ BAD — mutate posted entry
+$entry->update(['narration' => $new]);
+
+// ✅ GOOD — reverse
+DB::transaction(function () use ($entry) {
+    $this->journalService->reverse($entry);
+});
+```
+
+Every Service that moves money needs a feature test covering success + rollback on failure.

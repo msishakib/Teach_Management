@@ -1,0 +1,145 @@
+/* Compact Filament forms — tighter gaps, slightly smaller controls */
+
+/* Sidebar denser padding to match narrower width */
+.fi-sidebar-nav {
+    padding-left: 0.875rem !important;
+    padding-right: 0.875rem !important;
+    padding-top: 1.25rem !important;
+    padding-bottom: 1.25rem !important;
+    gap: 1.25rem !important;
+}
+
+.fi-sidebar-header {
+    padding-left: 0.875rem !important;
+    padding-right: 0.875rem !important;
+}
+
+.fi-sidebar-nav-groups {
+    gap: 1.25rem !important;
+}
+
+/* Form / field grid gaps (default gap-6) */
+.fi-form {
+    row-gap: 0.75rem !important;
+}
+
+.fi-fo-component-ctn {
+    gap: 0.75rem !important;
+}
+
+.fi-fo-split {
+    gap: 0.75rem !important;
+}
+
+/* Label ↔ input spacing (default gap-y-2) */
+.fi-fo-field-wrp > div {
+    row-gap: 0.25rem !important;
+}
+
+.fi-fo-field-wrp .grid.auto-cols-fr {
+    row-gap: 0.25rem !important;
+}
+
+.fi-fo-field-wrp-label {
+    font-size: 0.8125rem !important;
+    line-height: 1.15rem !important;
+}
+
+.fi-fo-field-wrp-helper-text,
+.fi-fo-field-wrp-error-message,
+.fi-fo-field-wrp-hint {
+    font-size: 0.75rem !important;
+}
+
+/* Sections / fieldsets */
+.fi-section-header {
+    gap: 0.5rem !important;
+    padding: 0.5rem 0.875rem !important;
+}
+
+.fi-section-header-heading {
+    font-size: 0.875rem !important;
+    line-height: 1.25rem !important;
+}
+
+.fi-section-content {
+    padding: 0.75rem 0.875rem !important;
+}
+
+.fi-section-footer {
+    padding: 0.5rem 0.875rem !important;
+}
+
+.fi-fieldset {
+    padding: 0.75rem 0.875rem !important;
+    border-radius: 0.75rem !important;
+}
+
+/* Inputs slightly shorter */
+.fi-input,
+.fi-select-input {
+    padding-top: 0.3rem !important;
+    padding-bottom: 0.3rem !important;
+    font-size: 0.8125rem !important;
+    line-height: 1.25rem !important;
+}
+
+.fi-input-wrp {
+    border-radius: 0.5rem !important;
+}
+
+.fi-input-wrp-prefix,
+.fi-input-wrp-suffix {
+    gap: 0.5rem !important;
+}
+
+.fi-input-wrp-icon {
+    width: 1rem !important;
+    height: 1rem !important;
+}
+
+textarea.fi-input {
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.4rem !important;
+}
+
+/* Contained tabs / wizard steps (default p-6) */
+.fi-tabs-tab,
+.fi-fo-wizard-step {
+    padding: 0.75rem 0.875rem !important;
+}
+
+/* Repeaters / builders */
+.fi-fo-repeater {
+    row-gap: 0.75rem !important;
+}
+
+.fi-fo-repeater-item-header,
+.fi-fo-builder-item-header {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+}
+
+/* Page form area a bit tighter */
+.fi-page > section {
+    padding-top: 1.25rem !important;
+    padding-bottom: 1.25rem !important;
+    row-gap: 1.25rem !important;
+}
+
+.fi-page .grid.flex-1.auto-cols-fr {
+    row-gap: 1rem !important;
+}
+
+/* Buttons on forms */
+.fi-btn {
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+    font-size: 0.8125rem !important;
+}
+
+.fi-form-actions {
+    gap: 0.5rem !important;
+}

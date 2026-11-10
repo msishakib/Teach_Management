@@ -1,0 +1,20 @@
+---
+description: Indexes, eager loading, pagination, and no N+1
+globs: app/**/*.php,database/migrations/**/*.php
+alwaysApply: false
+---
+
+# Queries & indexes
+
+- Index every foreign key and columns used in `where` / `orderBy` / `groupBy` (dates, status, `student_id`, `account_id`, etc.).
+- No N+1: eager load with `with()`. Call `Model::preventLazyLoading()` in non-production (`AppServiceProvider`).
+- Always paginate list queries. Use `chunk()` / `lazy()` for large exports — never `->get()` on unbounded sets.
+
+```php
+// ❌ BAD
+$students = Student::all();
+foreach ($students as $s) { $s->enrollments; }
+
+// ✅ GOOD
+Student::with('enrollments')->orderBy('name')->paginate(25);
+```
