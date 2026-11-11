@@ -24,13 +24,13 @@ class FinancialReports extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-document-chart-bar';
 
-    protected static ?string $navigationGroup = 'Reports';
+    protected static ?string $navigationGroup = 'Finance';
 
     protected static ?string $navigationLabel = 'Financial reports';
 
     protected static ?string $title = 'Financial reports';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 40;
 
     protected static string $view = 'filament.pages.financial-reports';
 

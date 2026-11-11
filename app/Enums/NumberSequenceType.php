@@ -10,6 +10,7 @@ enum NumberSequenceType: string
     case FeeReceipt = 'fee_receipt';
     case PaymentVoucher = 'payment_voucher';
     case ReceiveVoucher = 'receive_voucher';
+    case Certificate = 'certificate';
 
     public function prefixSettingKey(): string
     {

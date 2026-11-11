@@ -44,9 +44,13 @@ class RoleBasedAccessTest extends TestCase
 
         $this->assertFalse($teacher->canAccessPanel(Filament::getPanel('admin')));
 
+        // Wrong-panel sessions are cleared and redirected to that panel's login
+        // (instead of a hard 403) so users can switch portals in one browser.
         $this->actingAs($teacher)
             ->get('/admin')
-            ->assertForbidden();
+            ->assertRedirect('/admin/login');
+
+        $this->assertGuest();
     }
 
     public function test_super_admin_bypasses_permission_checks(): void

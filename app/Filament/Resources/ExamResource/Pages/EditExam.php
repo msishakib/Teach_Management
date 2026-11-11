@@ -7,7 +7,12 @@ use App\Enums\ExamStatus;
 use App\Filament\Resources\ExamResource;
 use App\Models\Exam;
 use App\Models\Student;
+use App\Filament\Pages\EnterExamMarks;
+use App\Models\ExamResult;
+use App\Services\CertificateService;
+use App\Services\ExamMarksService;
 use App\Services\ExamWorkflowService;
+use App\Services\ResultService;
 use App\Support\PermissionName;
 use Filament\Actions;
 use Filament\Forms;
@@ -79,17 +84,83 @@ class EditExam extends EditRecord
                     'Marks entry opened'
                 )),
 
+            Actions\Action::make('processResults')
+                ->label('Process results')
+                ->icon('heroicon-o-calculator')
+                ->visible(fn (): bool => in_array($this->exam()->status, [
+                    ExamStatus::MarksEntry,
+                    ExamStatus::Published,
+                ], true) && Auth::user()?->can('update', $this->exam()))
+                ->requiresConfirmation()
+                ->action(function (): void {
+                    try {
+                        $outcome = app(ResultService::class)->process($this->exam(), Auth::user());
+                        Notification::make()
+                            ->title('Results processed')
+                            ->body("Version {$outcome['version']->version}: {$outcome['processed']} students ({$outcome['passed']} pass, {$outcome['failed']} fail, {$outcome['absent']} absent).")
+                            ->success()
+                            ->send();
+                    } catch (ValidationException $e) {
+                        Notification::make()
+                            ->title('Could not process results')
+                            ->body(collect($e->errors())->flatten()->first())
+                            ->danger()
+                            ->send();
+                    }
+                }),
+
             Actions\Action::make('publish')
-                ->label('Publish')
+                ->label('Publish results')
                 ->icon('heroicon-o-check-badge')
                 ->color('success')
                 ->visible(fn (): bool => $this->exam()->status === ExamStatus::MarksEntry
                     && Auth::user()?->can(PermissionName::make('exam', 'publish')))
+                ->form([
+                    Forms\Components\Toggle::make('notify')
+                        ->label('Notify students & guardians')
+                        ->default(fn () => (bool) setting('academic.notify_on_result_publish', false)),
+                ])
                 ->requiresConfirmation()
-                ->action(fn () => $this->runTransition(
-                    fn () => $workflow->publish($this->exam(), Auth::user()),
-                    'Exam published'
-                )),
+                ->action(function (array $data): void {
+                    try {
+                        app(ResultService::class)->publish(
+                            $this->exam(),
+                            Auth::user(),
+                            (bool) ($data['notify'] ?? false),
+                        );
+                        $this->record = $this->exam()->fresh() ?? $this->exam();
+                        Notification::make()->title('Results published')->success()->send();
+                        $this->refreshFormData(['status']);
+                    } catch (ValidationException $e) {
+                        Notification::make()
+                            ->title('Could not publish')
+                            ->body(collect($e->errors())->flatten()->first())
+                            ->danger()
+                            ->send();
+                    }
+                }),
+
+            Actions\Action::make('unpublish')
+                ->label('Unpublish results')
+                ->icon('heroicon-o-lock-open')
+                ->color('warning')
+                ->visible(fn (): bool => $this->exam()->status === ExamStatus::Published
+                    && Auth::user()?->can(PermissionName::make('exam', 'override')))
+                ->requiresConfirmation()
+                ->action(function (): void {
+                    try {
+                        app(ResultService::class)->unpublish($this->exam(), Auth::user());
+                        $this->record = $this->exam()->fresh() ?? $this->exam();
+                        Notification::make()->title('Results unpublished')->success()->send();
+                        $this->refreshFormData(['status']);
+                    } catch (ValidationException $e) {
+                        Notification::make()
+                            ->title('Could not unpublish')
+                            ->body(collect($e->errors())->flatten()->first())
+                            ->danger()
+                            ->send();
+                    }
+                }),
 
             Actions\Action::make('close')
                 ->label('Close')
@@ -102,6 +173,58 @@ class EditExam extends EditRecord
                     fn () => $workflow->close($this->exam(), Auth::user()),
                     'Exam closed'
                 )),
+
+            Actions\Action::make('meritList')
+                ->label('Merit list PDF')
+                ->icon('heroicon-o-trophy')
+                ->url(fn (): string => route('exams.merit-list.pdf', $this->exam()))
+                ->openUrlInNewTab()
+                ->visible(fn (): bool => (bool) Auth::user()?->can('view', $this->exam())),
+
+            Actions\Action::make('failList')
+                ->label('Fail list PDF')
+                ->icon('heroicon-o-x-circle')
+                ->url(fn (): string => route('exams.fail-list.pdf', $this->exam()))
+                ->openUrlInNewTab()
+                ->visible(fn (): bool => (bool) Auth::user()?->can('view', $this->exam())),
+
+            Actions\Action::make('subjectStats')
+                ->label('Subject stats PDF')
+                ->icon('heroicon-o-chart-bar')
+                ->url(fn (): string => route('exams.subject-stats.pdf', $this->exam()))
+                ->openUrlInNewTab()
+                ->visible(fn (): bool => (bool) Auth::user()?->can('view', $this->exam())),
+
+            Actions\Action::make('issueCertificates')
+                ->label('Issue certificates')
+                ->icon('heroicon-o-academic-cap')
+                ->visible(fn (): bool => $this->exam()->status === ExamStatus::Published
+                    && Auth::user()?->can(PermissionName::make('exam', 'publish')))
+                ->requiresConfirmation()
+                ->action(function (): void {
+                    $actor = Auth::user();
+                    $certs = app(CertificateService::class);
+                    $issued = 0;
+
+                    ExamResult::withoutGlobalScopes()
+                        ->with(['student', 'exam.batch.course'])
+                        ->where('exam_id', $this->exam()->id)
+                        ->whereNotNull('published_at')
+                        ->where('status', \App\Enums\ExamResultStatus::Pass)
+                        ->orderBy('id')
+                        ->chunkById(100, function ($results) use ($certs, $actor, &$issued): void {
+                            foreach ($results as $result) {
+                                $certs->issueForExamResult($result, $actor);
+                                $issued++;
+                            }
+                        });
+
+                    Notification::make()
+                        ->title('Certificates issued')
+                        ->body("{$issued} certificate(s) ready.")
+                        ->success()
+                        ->send();
+                }),
 
             Actions\Action::make('generateFees')
                 ->label('Generate exam fees')
@@ -126,6 +249,20 @@ class EditExam extends EditRecord
                             ->send();
                     }
                 }),
+
+            Actions\Action::make('enterMarks')
+                ->label(function (): string {
+                    $progress = app(ExamMarksService::class)->progress($this->exam());
+
+                    return "Enter marks ({$progress['subjects_complete']}/{$progress['subjects_total']})";
+                })
+                ->icon('heroicon-o-pencil-square')
+                ->url(EnterExamMarks::getUrl(query: ['exam_id' => $this->exam()->id]))
+                ->visible(fn (): bool => in_array($this->exam()->status, [
+                    ExamStatus::MarksEntry,
+                    ExamStatus::Published,
+                    ExamStatus::Closed,
+                ], true) && Auth::user()?->can('update', $this->exam())),
 
             Actions\Action::make('routinePdf')
                 ->label('Print routine')

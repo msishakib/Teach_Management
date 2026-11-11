@@ -16,13 +16,13 @@ class TakeAttendance extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
 
-    protected static ?string $navigationGroup = 'Attendance';
+    protected static ?string $navigationGroup = 'Teaching';
 
     protected static ?string $navigationLabel = 'Take attendance';
 
     protected static ?string $title = 'Take attendance';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 4;
 
     protected static string $view = 'filament.pages.take-attendance';
 

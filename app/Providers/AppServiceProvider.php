@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Enums\RoleName;
+use App\Services\SiteProfileService;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // One profile build per request for the public site.
+        $this->app->scoped(SiteProfileService::class);
     }
 
     /**

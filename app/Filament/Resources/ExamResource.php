@@ -11,6 +11,7 @@ use App\Models\Batch;
 use App\Models\Exam;
 use App\Models\ExamType;
 use App\Models\GradingScale;
+use App\Services\ExamMarksService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -120,6 +121,35 @@ class ExamResource extends Resource
                     ->counts('subjects')
                     ->label('Subjects')
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('marks_progress')
+                    ->label('Marks progress')
+                    ->getStateUsing(function (Exam $record): string {
+                        static $cache = [];
+
+                        if (! isset($cache[$record->id])) {
+                            $cache[$record->id] = app(ExamMarksService::class)->progress($record);
+                        }
+
+                        $progress = $cache[$record->id];
+
+                        return "{$progress['subjects_complete']}/{$progress['subjects_total']} ({$progress['percent']}%)";
+                    })
+                    ->badge()
+                    ->color(function (Exam $record): string {
+                        static $cache = [];
+
+                        if (! isset($cache[$record->id])) {
+                            $cache[$record->id] = app(ExamMarksService::class)->progress($record);
+                        }
+
+                        $percent = $cache[$record->id]['percent'];
+
+                        return match (true) {
+                            $percent >= 100 => 'success',
+                            $percent > 0 => 'warning',
+                            default => 'gray',
+                        };
+                    }),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')

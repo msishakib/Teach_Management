@@ -62,6 +62,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasOne(Student::class);
     }
 
+    public function guardian(): HasOne
+    {
+        return $this->hasOne(Guardian::class);
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return match ($panel->getId()) {
@@ -72,9 +77,14 @@ class User extends Authenticatable implements FilamentUser
                 ),
             ),
             'teacher' => $this->hasRole(RoleName::Teacher->value)
-                || $this->type === UserType::Teacher,
+                || $this->type === UserType::Teacher
+                || (bool) $this->teacher,
             'student' => $this->hasRole(RoleName::Student->value)
-                || $this->type === UserType::Student,
+                || $this->type === UserType::Student
+                || (bool) $this->student
+                || $this->hasRole(RoleName::Guardian->value)
+                || $this->type === UserType::Guardian
+                || (bool) $this->guardian,
             default => false,
         };
     }

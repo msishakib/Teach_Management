@@ -38,6 +38,7 @@ return [
         'journal',
         'account',
         'report',
+        'website',
     ],
 
     /*
@@ -48,6 +49,7 @@ return [
         'settings.update',
         'attendance.override',
         'exam.publish',
+        'exam.override',
     ],
 
     /*

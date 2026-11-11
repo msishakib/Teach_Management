@@ -77,6 +77,9 @@ class SettingsService
     public function forgetCache(): void
     {
         Cache::forget($this->cacheKey());
+
+        // The public site renders institute name, colours, stat overrides, etc.
+        app(HomepageService::class)->flush();
     }
 
     /**

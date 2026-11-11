@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesHomepageCache;
 use App\Enums\ExamStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Exam extends Model
 {
-    use HasFactory;
+    use FlushesHomepageCache, HasFactory;
 
     protected $fillable = [
         'academic_session_id',
@@ -57,6 +58,16 @@ class Exam extends Model
     public function subjects(): HasMany
     {
         return $this->hasMany(ExamSubject::class);
+    }
+
+    public function results(): HasMany
+    {
+        return $this->hasMany(ExamResult::class);
+    }
+
+    public function resultVersions(): HasMany
+    {
+        return $this->hasMany(ResultVersion::class);
     }
 
     public function invoices(): HasMany

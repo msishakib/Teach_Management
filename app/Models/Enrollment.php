@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\EnrollmentStatus;
+use App\Models\Scopes\PortalStudentOwnedScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +11,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Enrollment extends Model
 {
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new PortalStudentOwnedScope);
+    }
+
 
     protected $fillable = [
         'student_id',

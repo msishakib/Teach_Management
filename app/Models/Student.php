@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesHomepageCache;
 use App\Enums\Gender;
 use App\Enums\StudentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Student extends Model
 {
-    use HasFactory, SoftDeletes;
+    use FlushesHomepageCache, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',
@@ -68,6 +69,16 @@ class Student extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(StudentInvoice::class);
+    }
+
+    public function examResults(): HasMany
+    {
+        return $this->hasMany(ExamResult::class);
+    }
+
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(Certificate::class);
     }
 
     public function receipts(): HasMany

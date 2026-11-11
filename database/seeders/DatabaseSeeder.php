@@ -34,5 +34,10 @@ class DatabaseSeeder extends Seeder
         );
 
         $admin->syncRoles([RoleName::SuperAdmin->value]);
+
+        // Demo courses, teachers, toppers, notices etc. for the public website.
+        if (! app()->isProduction()) {
+            $this->call(WebsiteDemoSeeder::class);
+        }
     }
 }

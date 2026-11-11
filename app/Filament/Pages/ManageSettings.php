@@ -67,6 +67,15 @@ class ManageSettings extends Page implements HasForms
                                     ->label('Address')
                                     ->rows(3)
                                     ->columnSpanFull(),
+                                Forms\Components\TextInput::make('general.city')
+                                    ->label('City / district')
+                                    ->helperText('Used for local search results, e.g. Dhaka')
+                                    ->maxLength(100),
+                                Forms\Components\TextInput::make('general.country')
+                                    ->label('Country code')
+                                    ->helperText('Two-letter ISO code, e.g. BD')
+                                    ->length(2)
+                                    ->dehydrateStateUsing(fn (?string $state) => $state ? strtoupper($state) : null),
                                 Forms\Components\TextInput::make('general.phone')
                                     ->label('Phone')
                                     ->tel()
@@ -104,6 +113,15 @@ class ManageSettings extends Page implements HasForms
                                     ->columnSpanFull()
                                     ->required()
                                     ->rule('size:12'),
+                                Forms\Components\Toggle::make('academic.fail_if_any_subject_fails')
+                                    ->label('Fail student if any subject fails')
+                                    ->inline(false),
+                                Forms\Components\Toggle::make('academic.gpa_zero_on_fail')
+                                    ->label('Set GPA to 0.00 when student fails')
+                                    ->inline(false),
+                                Forms\Components\Toggle::make('academic.notify_on_result_publish')
+                                    ->label('Notify students/guardians when results are published')
+                                    ->inline(false),
                             ])
                             ->columns(2),
 
@@ -212,6 +230,10 @@ class ManageSettings extends Page implements HasForms
                                     ->maxLength(20),
                                 Forms\Components\TextInput::make('numbering.employee_prefix')
                                     ->label('Employee no prefix')
+                                    ->required()
+                                    ->maxLength(20),
+                                Forms\Components\TextInput::make('numbering.certificate_prefix')
+                                    ->label('Certificate prefix')
                                     ->required()
                                     ->maxLength(20),
                                 Forms\Components\TextInput::make('numbering.format')

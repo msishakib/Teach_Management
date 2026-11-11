@@ -20,4 +20,9 @@ class ExamPolicy
     {
         return $user->can(PermissionName::make('exam', 'publish'));
     }
+
+    public function override(User $user, ?Exam $exam = null): bool
+    {
+        return $user->can(PermissionName::make('exam', 'override'));
+    }
 }

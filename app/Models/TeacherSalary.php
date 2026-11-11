@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\TeacherSalaryStatus;
+use App\Models\Scopes\PortalTeacherOwnedScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,6 +12,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class TeacherSalary extends Model
 {
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope(new PortalTeacherOwnedScope);
+    }
+
 
     protected $fillable = [
         'teacher_id',

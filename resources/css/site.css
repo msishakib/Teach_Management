@@ -1,0 +1,463 @@
+@import "tailwindcss";
+
+/* Self-hosted fonts (font-display: swap is set by Fontsource). Only the
+   subsets the page actually renders are downloaded thanks to unicode-range. */
+@import "@fontsource-variable/plus-jakarta-sans/wght.css";
+@import "@fontsource/hind-siliguri/latin-400.css";
+@import "@fontsource/hind-siliguri/latin-500.css";
+@import "@fontsource/hind-siliguri/latin-600.css";
+@import "@fontsource/hind-siliguri/latin-700.css";
+@import "@fontsource/hind-siliguri/bengali-400.css";
+@import "@fontsource/hind-siliguri/bengali-500.css";
+@import "@fontsource/hind-siliguri/bengali-600.css";
+@import "@fontsource/hind-siliguri/bengali-700.css";
+
+@source "../views/site";
+@source "../views/components";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ------------------------------------------------------------------ */
+/* Design tokens. --primary / --accent are injected from Settings.     */
+/* ------------------------------------------------------------------ */
+:root {
+    color-scheme: light;
+
+    --primary: #4f46e5;
+    --accent: #c026d3;
+
+    --bg: #f6f6fb;
+    --surface: rgb(255 255 255 / 0.72);
+    --surface-solid: #ffffff;
+    --text: #0e0f1f;
+    --muted: #4f5169;
+    --border: rgb(14 15 31 / 0.09);
+
+    /* Brand colours tuned for use as *text* on the current background. */
+    --primary-ink: color-mix(in oklab, var(--primary) 86%, black);
+    --accent-ink: color-mix(in oklab, var(--accent) 86%, black);
+
+    --shadow-soft:
+        0 1px 1px rgb(20 22 60 / 0.04), 0 4px 8px rgb(20 22 60 / 0.04),
+        0 16px 32px rgb(20 22 60 / 0.06), 0 32px 64px rgb(20 22 60 / 0.05);
+    --shadow-lift:
+        0 2px 2px rgb(20 22 60 / 0.05), 0 8px 16px rgb(20 22 60 / 0.07),
+        0 24px 48px rgb(20 22 60 / 0.1), 0 48px 96px rgb(20 22 60 / 0.08);
+}
+
+.dark {
+    color-scheme: dark;
+
+    --bg: #07070f;
+    --surface: rgb(255 255 255 / 0.055);
+    --surface-solid: #12121f;
+    --text: #f3f3fb;
+    --muted: #a6a8c2;
+    --border: rgb(255 255 255 / 0.11);
+
+    --primary-ink: color-mix(in oklab, var(--primary) 52%, white);
+    --accent-ink: color-mix(in oklab, var(--accent) 52%, white);
+
+    --shadow-soft:
+        0 1px 1px rgb(0 0 0 / 0.3), 0 4px 8px rgb(0 0 0 / 0.25),
+        0 16px 32px rgb(0 0 0 / 0.3);
+    --shadow-lift:
+        0 2px 2px rgb(0 0 0 / 0.35), 0 8px 16px rgb(0 0 0 / 0.3),
+        0 24px 48px rgb(0 0 0 / 0.4);
+}
+
+@theme inline {
+    --font-sans:
+        "Plus Jakarta Sans Variable", "Hind Siliguri", ui-sans-serif, system-ui,
+        -apple-system, "Segoe UI", sans-serif;
+
+    --color-primary: var(--primary);
+    --color-accent: var(--accent);
+    --color-bg: var(--bg);
+    --color-surface: var(--surface);
+    --color-surface-solid: var(--surface-solid);
+    --color-ink: var(--text);
+    --color-muted: var(--muted);
+    --color-line: var(--border);
+    --color-primary-ink: var(--primary-ink);
+    --color-accent-ink: var(--accent-ink);
+
+    --shadow-soft: var(--shadow-soft);
+    --shadow-lift: var(--shadow-lift);
+
+    --animate-float: float 9s ease-in-out infinite;
+    --animate-float-slow: float 14s ease-in-out infinite reverse;
+}
+
+@keyframes float {
+    0%,
+    100% {
+        transform: translate3d(0, 0, 0);
+    }
+    50% {
+        transform: translate3d(0, -14px, 0);
+    }
+}
+
+@keyframes marquee {
+    to {
+        transform: translate3d(-50%, 0, 0);
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Base                                                               */
+/* ------------------------------------------------------------------ */
+@layer base {
+    html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 5.5rem;
+        -webkit-text-size-adjust: 100%;
+    }
+
+    /* Hind Siliguri leads for Bangla; Plus Jakarta (no Bengali glyphs) falls back to it anyway. */
+    html[lang="bn"] body {
+        font-family:
+            "Hind Siliguri", "Plus Jakarta Sans Variable", ui-sans-serif,
+            system-ui, sans-serif;
+        line-height: 1.7;
+    }
+
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-sans);
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: clip;
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--primary-ink);
+        outline-offset: 3px;
+        border-radius: 0.5rem;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+
+    ::selection {
+        background: color-mix(in oklab, var(--primary) 28%, transparent);
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Components                                                          */
+/* ------------------------------------------------------------------ */
+@layer components {
+    /* Soft gradient mesh behind the whole page. */
+    .mesh-bg {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background:
+            radial-gradient(
+                55% 45% at 8% 0%,
+                color-mix(in oklab, var(--primary) 22%, transparent),
+                transparent 70%
+            ),
+            radial-gradient(
+                45% 40% at 95% 8%,
+                color-mix(in oklab, var(--accent) 17%, transparent),
+                transparent 70%
+            ),
+            radial-gradient(
+                60% 50% at 55% 105%,
+                color-mix(in oklab, var(--primary) 14%, transparent),
+                transparent 70%
+            ),
+            var(--bg);
+    }
+
+    .dark .mesh-bg {
+        background:
+            radial-gradient(
+                55% 45% at 8% 0%,
+                color-mix(in oklab, var(--primary) 30%, transparent),
+                transparent 70%
+            ),
+            radial-gradient(
+                45% 40% at 95% 8%,
+                color-mix(in oklab, var(--accent) 22%, transparent),
+                transparent 70%
+            ),
+            radial-gradient(
+                60% 50% at 55% 105%,
+                color-mix(in oklab, var(--primary) 20%, transparent),
+                transparent 70%
+            ),
+            var(--bg);
+    }
+
+    /* Glassmorphism card. */
+    .glass {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow-soft);
+        -webkit-backdrop-filter: blur(16px) saturate(140%);
+        backdrop-filter: blur(16px) saturate(140%);
+    }
+
+    .glass-strong {
+        background: color-mix(in oklab, var(--surface-solid) 82%, transparent);
+        border: 1px solid var(--border);
+        -webkit-backdrop-filter: blur(22px) saturate(160%);
+        backdrop-filter: blur(22px) saturate(160%);
+    }
+
+    .grad-bg {
+        background-image: linear-gradient(
+            135deg,
+            var(--primary) 0%,
+            color-mix(in oklab, var(--primary) 45%, var(--accent)) 50%,
+            var(--accent) 100%
+        );
+    }
+
+    .text-gradient {
+        background-image: linear-gradient(
+            100deg,
+            var(--primary-ink),
+            var(--accent-ink)
+        );
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* Radial "orbs" – cheaper than filter: blur on mobile GPUs. */
+    .orb {
+        position: absolute;
+        border-radius: 9999px;
+        pointer-events: none;
+        will-change: transform;
+        background: radial-gradient(
+            circle at 50% 50%,
+            color-mix(in oklab, var(--orb, var(--primary)) 55%, transparent) 0%,
+            transparent 68%
+        );
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: 9999px;
+        padding: 0.75rem 1.4rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        line-height: 1.2;
+        white-space: nowrap;
+        transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease,
+            background-color 0.2s ease,
+            border-color 0.2s ease;
+    }
+
+    .btn:active {
+        transform: translateY(1px) scale(0.99);
+    }
+
+    .btn-primary {
+        color: #fff;
+        background-image: linear-gradient(
+            135deg,
+            var(--primary),
+            color-mix(in oklab, var(--primary) 60%, var(--accent))
+        );
+        box-shadow:
+            0 1px 0 rgb(255 255 255 / 0.25) inset,
+            0 8px 24px color-mix(in oklab, var(--primary) 40%, transparent);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow:
+            0 1px 0 rgb(255 255 255 / 0.25) inset,
+            0 14px 32px color-mix(in oklab, var(--primary) 50%, transparent);
+    }
+
+    .btn-ghost {
+        color: var(--text);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+    }
+
+    .btn-ghost:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in oklab, var(--primary) 45%, transparent);
+    }
+
+    .btn-light {
+        color: #1b1a4a;
+        background: #fff;
+        box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+    }
+
+    .btn-light:hover {
+        transform: translateY(-2px);
+    }
+
+    .field {
+        width: 100%;
+        border-radius: 1rem;
+        padding: 0.8rem 1rem;
+        background: color-mix(in oklab, var(--surface-solid) 70%, transparent);
+        border: 1px solid var(--border);
+        color: var(--text);
+        transition:
+            border-color 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .field::placeholder {
+        color: color-mix(in oklab, var(--muted) 80%, transparent);
+    }
+
+    .field:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px color-mix(in oklab, var(--primary) 22%, transparent);
+    }
+
+    .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-radius: 9999px;
+        padding: 0.3rem 0.85rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--primary-ink);
+        background: color-mix(in oklab, var(--primary) 11%, transparent);
+        border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
+    }
+
+    html[lang="bn"] .eyebrow {
+        letter-spacing: 0.02em;
+        text-transform: none;
+        font-size: 0.85rem;
+    }
+
+    /* Horizontal scroll-snap carousel (no JS needed to scroll). */
+    .snap-row {
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+        padding-block: 0.5rem 1.5rem;
+        padding-inline: 1rem;
+        margin-inline: -1rem;
+        scroll-padding-inline: 1rem;
+    }
+
+    .snap-row::-webkit-scrollbar {
+        display: none;
+    }
+
+    .snap-row > * {
+        scroll-snap-align: start;
+        flex: 0 0 auto;
+    }
+
+    /* Marquee: content is rendered twice, second copy is aria-hidden. */
+    .marquee {
+        overflow: hidden;
+        -webkit-mask-image: linear-gradient(
+            90deg,
+            transparent,
+            #000 6%,
+            #000 94%,
+            transparent
+        );
+        mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+    }
+
+    .marquee-track {
+        display: flex;
+        width: max-content;
+        animation: marquee var(--marquee-duration, 45s) linear infinite;
+    }
+
+    .marquee:hover .marquee-track,
+    .marquee:focus-within .marquee-track {
+        animation-play-state: paused;
+    }
+
+    /* Scroll reveal (only hidden once JS has flagged the document). */
+    .js [data-reveal] {
+        opacity: 0;
+        transform: translate3d(0, 22px, 0);
+        transition:
+            opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1),
+            transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+        transition-delay: var(--d, 0ms);
+    }
+
+    .reveal-fallback [data-reveal],
+    .js [data-reveal].is-visible {
+        opacity: 1;
+        transform: none;
+    }
+
+    .js [data-reveal="fade"] {
+        transform: none;
+    }
+
+    .prose-site p {
+        margin-block: 0.9em;
+    }
+
+    .prose-site {
+        color: var(--muted);
+        line-height: 1.8;
+        white-space: pre-line;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Motion preferences                                                  */
+/* ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        transition-delay: 0ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .js [data-reveal] {
+        opacity: 1;
+        transform: none;
+    }
+
+    .marquee {
+        overflow-x: auto;
+    }
+
+    .marquee-track {
+        animation: none;
+    }
+}
