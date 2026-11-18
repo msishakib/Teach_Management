@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\MediaCategory;
 use App\Models\Concerns\FlushesHomepageCache;
+use App\Models\Concerns\HasManagedMedia;
+use App\Models\Concerns\LogsActivityWithContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,10 +13,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
 
-class Teacher extends Model
+class Teacher extends Model implements HasMedia
 {
-    use FlushesHomepageCache, HasFactory, SoftDeletes;
+    use FlushesHomepageCache, HasFactory, HasManagedMedia, LogsActivityWithContext, SoftDeletes;
+
+    /**
+     * @return list<MediaCategory>
+     */
+    public function mediaCategories(): array
+    {
+        return [MediaCategory::TeacherPhoto, MediaCategory::TeacherDocument];
+    }
 
     protected $fillable = [
         'user_id',

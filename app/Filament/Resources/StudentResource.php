@@ -12,6 +12,7 @@ use App\Filament\Resources\StudentResource\Pages;
 use App\Filament\Resources\StudentResource\RelationManagers\GuardiansRelationManager;
 use App\Models\Batch;
 use App\Models\Student;
+use Filament\Actions\Exports\Enums\ExportFormat;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -72,10 +73,50 @@ class StudentResource extends Resource
                             ->columnSpanFull(),
                         Forms\Components\FileUpload::make('photo')
                             ->image()
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                            ->maxSize(5120)
                             ->directory('students/photos')
                             ->visibility('public')
                             ->imageEditor()
                             ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+
+                Forms\Components\Section::make('Identity & academic background')
+                    ->schema([
+                        Forms\Components\TextInput::make('national_id')
+                            ->label('NID number')
+                            ->maxLength(50),
+                        Forms\Components\TextInput::make('birth_certificate_no')
+                            ->label('Birth certificate no')
+                            ->maxLength(50),
+                        Forms\Components\TextInput::make('religion')
+                            ->maxLength(50),
+                        Forms\Components\Select::make('blood_group')
+                            ->options(array_combine(
+                                $groups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
+                                $groups,
+                            ))
+                            ->native(false),
+                        Forms\Components\Textarea::make('present_address')
+                            ->rows(3)
+                            ->columnSpanFull(),
+                        Forms\Components\Textarea::make('permanent_address')
+                            ->rows(3)
+                            ->columnSpanFull(),
+                        Forms\Components\TextInput::make('last_institution')
+                            ->label('Last institution')
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('last_exam')
+                            ->label('Last exam')
+                            ->maxLength(50),
+                        Forms\Components\TextInput::make('last_result')
+                            ->label('Result / GPA')
+                            ->maxLength(50),
+                        Forms\Components\TextInput::make('passing_year')
+                            ->numeric()
+                            ->minValue(1950)
+                            ->maxValue(now()->year),
                     ])
                     ->columns(2),
 
@@ -193,7 +234,7 @@ class StudentResource extends Resource
                 ExportAction::make()
                     ->exporter(StudentExporter::class)
                     ->formats([
-                        \Filament\Actions\Exports\Enums\ExportFormat::Csv,
+                        ExportFormat::Csv,
                     ]),
             ])
             ->actions([
@@ -205,7 +246,7 @@ class StudentResource extends Resource
                     Tables\Actions\ExportBulkAction::make()
                         ->exporter(StudentExporter::class)
                         ->formats([
-                            \Filament\Actions\Exports\Enums\ExportFormat::Csv,
+                            ExportFormat::Csv,
                         ]),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),

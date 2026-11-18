@@ -13,12 +13,13 @@ use App\Models\ClassRoutine;
 use App\Models\LeaveRequest;
 use App\Models\Student;
 use App\Models\StudentAttendance;
-use App\Models\Teacher;
 use App\Models\User;
 use App\Notifications\StudentAbsentNotification;
+use App\Support\DateRange;
 use App\Support\PermissionName;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -38,7 +39,8 @@ class AttendanceService
 
         $sessionId = AttendanceSession::query()
             ->where('batch_id', $batch->id)
-            ->whereDate('date', $dateString)
+            ->where('date', '>=', $dateString)
+            ->where('date', '<', DateRange::endExclusive($dateString))
             ->when(
                 $subjectId === null,
                 fn ($q) => $q->whereNull('subject_id'),
@@ -75,8 +77,8 @@ class AttendanceService
                 $join->on('approved_leaves.requester_id', '=', 'students.id')
                     ->where('approved_leaves.requester_type', '=', Student::class)
                     ->where('approved_leaves.status', '=', LeaveRequestStatus::Approved->value)
-                    ->whereDate('approved_leaves.from_date', '<=', $dateString)
-                    ->whereDate('approved_leaves.to_date', '>=', $dateString);
+                    ->where('approved_leaves.from_date', '<', DateRange::endExclusive($dateString))
+                    ->where('approved_leaves.to_date', '>=', $dateString);
             })
             ->where('students.status', StudentStatus::Active->value)
             ->whereNull('students.deleted_at')
@@ -229,8 +231,8 @@ class AttendanceService
         $studentId = (int) $leave->requester_id;
 
         $sessionIds = AttendanceSession::query()
-            ->whereDate('date', '>=', $leave->from_date)
-            ->whereDate('date', '<=', $leave->to_date)
+            ->where('date', '>=', $leave->from_date)
+            ->where('date', '<', DateRange::endExclusive($leave->to_date))
             ->whereHas('batch.enrollments', function ($query) use ($studentId) {
                 $query->where('student_id', $studentId)
                     ->where('status', EnrollmentStatus::Active->value);
@@ -283,7 +285,8 @@ class AttendanceService
 
         $query = AttendanceSession::query()
             ->where('batch_id', $batch->id)
-            ->whereDate('date', $date->toDateString())
+            ->where('date', '>=', $date->toDateString())
+            ->where('date', '<', DateRange::endExclusive($date->toDateString()))
             ->when(
                 $subjectId === null,
                 fn ($q) => $q->whereNull('subject_id'),
@@ -306,7 +309,7 @@ class AttendanceService
                 'taken_by' => $actor->id,
                 'status' => AttendanceSessionStatus::Open,
             ]);
-        } catch (\Illuminate\Database\QueryException $exception) {
+        } catch (QueryException $exception) {
             $existing = $query->first();
 
             if ($existing) {
@@ -347,8 +350,8 @@ class AttendanceService
             ->where('requester_type', Student::class)
             ->whereIn('requester_id', array_keys($studentIds))
             ->where('status', LeaveRequestStatus::Approved)
-            ->whereDate('from_date', '<=', $date->toDateString())
-            ->whereDate('to_date', '>=', $date->toDateString())
+            ->where('from_date', '<', DateRange::endExclusive($date->toDateString()))
+            ->where('to_date', '>=', $date->toDateString())
             ->pluck('requester_id')
             ->mapWithKeys(fn ($id) => [(int) $id => true])
             ->all();

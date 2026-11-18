@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\EnrollmentStatus;
 use App\Enums\ExamStatus;
 use App\Enums\RoleName;
+use App\Jobs\GenerateExamFeesJob;
 use App\Models\Batch;
 use App\Models\Enrollment;
 use App\Models\Exam;
@@ -20,6 +21,7 @@ use Database\Seeders\GradingScaleSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\SettingsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -164,6 +166,20 @@ class ExamModuleTest extends TestCase
         $this->assertSame(1, $second['skipped']);
         $this->assertSame(1, StudentInvoice::query()->where('exam_id', $this->exam->id)->count());
         $this->assertSame('exam:'.$this->exam->id, StudentInvoice::query()->first()->month);
+    }
+
+    public function test_exam_fee_generation_can_be_queued(): void
+    {
+        Queue::fake();
+
+        $this->addSubject();
+        $this->workflow->schedule($this->exam, generateFees: true);
+
+        Queue::assertPushed(GenerateExamFeesJob::class, function (GenerateExamFeesJob $job): bool {
+            return $job->examId === $this->exam->id;
+        });
+
+        $this->assertSame(0, StudentInvoice::query()->where('exam_id', $this->exam->id)->count());
     }
 
     public function test_default_grading_scale_is_seeded(): void

@@ -10,3 +10,22 @@ Artisan::command('inspire', function () {
 
 Schedule::command('accounting:rebuild-daily-balances')->dailyAt('01:15');
 
+// Nightly database backup. Old backups are pruned to the 14-day retention
+// window configured in config/backup.php.
+Schedule::command('backup:run --only-db')
+    ->dailyAt('02:00')
+    ->withoutOverlapping();
+
+Schedule::command('backup:clean')
+    ->dailyAt('02:30')
+    ->withoutOverlapping();
+
+Schedule::command('backup:monitor')
+    ->dailyAt('03:00')
+    ->withoutOverlapping();
+
+// Remove orphaned media files and upload chunks older than 24 hours.
+Schedule::command('media:prune')
+    ->dailyAt('03:30')
+    ->withoutOverlapping();
+

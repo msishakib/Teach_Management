@@ -5,9 +5,12 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\Auth\Login;
 use App\Filament\Teacher\Pages\Dashboard;
 use App\Http\Middleware\EnsureFilamentPanelAccess;
+use App\Http\Middleware\EnforceSessionTimeout;
+use App\Http\Middleware\SetPublicLocale;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -37,11 +40,21 @@ class TeacherPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Teacher/Widgets'), for: 'App\\Filament\\Teacher\\Widgets')
             ->widgets([])
+            ->userMenuItems([
+                'home' => MenuItem::make()
+                    ->label('Website home')
+                    ->icon('heroicon-o-home')
+                    ->url(fn (): string => route('home', [
+                        'locale' => SetPublicLocale::preferred(request()),
+                    ]))
+                    ->sort(-1),
+            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
                 AuthenticateSession::class,
+                EnforceSessionTimeout::class,
                 ShareErrorsFromSession::class,
                 VerifyCsrfToken::class,
                 SubstituteBindings::class,

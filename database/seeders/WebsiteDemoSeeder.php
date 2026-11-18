@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\AcademicSessionStatus;
 use App\Enums\BatchStatus;
+use App\Enums\DeliveryMode;
 use App\Enums\ExamResultStatus;
 use App\Enums\ExamStatus;
 use App\Enums\ExamTypeStatus;
@@ -86,9 +87,9 @@ class WebsiteDemoSeeder extends Seeder
                 'title_bn' => 'যেখানে স্বপ্নবাজ শিক্ষার্থীরা হয়ে ওঠে সেরা',
                 'subtitle' => 'Expert teachers, small batches and a smart learning system — admissions are open for the 2026–27 session.',
                 'subtitle_bn' => 'অভিজ্ঞ শিক্ষক, ছোট ব্যাচ ও স্মার্ট শেখার ব্যবস্থা — ২০২৬–২৭ সেশনে ভর্তি চলছে।',
-                'cta_label' => 'Apply Now',
-                'cta_label_bn' => 'ভর্তি হোন',
-                'cta_url' => '/apply',
+                'cta_label' => 'Buy courses',
+                'cta_label_bn' => 'কোর্স কিনুন',
+                'cta_url' => '#courses',
                 'palette' => 0,
             ],
             [
@@ -106,9 +107,9 @@ class WebsiteDemoSeeder extends Seeder
                 'title_bn' => 'সাবলীল ইংরেজি বলুন, আইএলটিএস ৭+ স্কোর করুন',
                 'subtitle' => 'Small speaking-focused batches with certified IELTS trainers and mock tests every week.',
                 'subtitle_bn' => 'সনদপ্রাপ্ত আইএলটিএস প্রশিক্ষকের সাথে কথা বলার অনুশীলনভিত্তিক ছোট ব্যাচ এবং প্রতি সপ্তাহে মক টেস্ট।',
-                'cta_label' => 'Join the next batch',
-                'cta_label_bn' => 'পরের ব্যাচে যোগ দিন',
-                'cta_url' => '/apply',
+                'cta_label' => 'Buy courses',
+                'cta_label_bn' => 'কোর্স কিনুন',
+                'cta_url' => '#courses',
                 'palette' => 2,
             ],
         ];
@@ -168,7 +169,18 @@ class WebsiteDemoSeeder extends Seeder
         foreach ($definitions as $index => $definition) {
             $course = Course::query()->updateOrCreate(
                 ['code' => $definition['code']],
-                ['name' => $definition['name'], 'description' => $definition['description'], 'is_active' => true],
+                [
+                    'name' => $definition['name'],
+                    'description' => $definition['description'],
+                    'is_active' => true,
+                    // Demo catalogue is buyable online (checkout), not the offline apply form.
+                    'delivery_mode' => DeliveryMode::Online,
+                    'is_published' => true,
+                    'price' => $definition['price'],
+                    'sale_price' => null,
+                    'access_days' => $definition['period'] === 'one_time' ? 180 : 365,
+                    'short_description' => $definition['tagline'],
+                ],
             );
 
             CourseProfile::query()->updateOrCreate(

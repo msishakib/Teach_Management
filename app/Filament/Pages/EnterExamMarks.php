@@ -67,15 +67,12 @@ class EnterExamMarks extends Page implements HasForms
                         ->label('Exam subject')
                         ->options(function () {
                             $user = Auth::user();
-                            $marks = app(ExamMarksService::class);
 
-                            return $marks->examsForActor($user)
-                                ->load(['subjects.subject'])
-                                ->flatMap(fn ($exam) => $marks->subjectsForActor($user, $exam)
-                                    ->mapWithKeys(fn (ExamSubject $subject) => [
-                                        $subject->id => $exam->name.' — '.($subject->subject?->name ?? 'Subject'),
-                                    ]))
-                                ->all();
+                            if (! $user) {
+                                return [];
+                            }
+
+                            return app(ExamMarksService::class)->subjectOptionsForActor($user);
                         })
                         ->default(fn () => $this->data['exam_subject_id'] ?? $this->examSubjectId)
                         ->searchable()
@@ -83,6 +80,7 @@ class EnterExamMarks extends Page implements HasForms
                     Forms\Components\FileUpload::make('csv')
                         ->label('CSV file')
                         ->acceptedFileTypes(['text/csv', 'text/plain', 'application/vnd.ms-excel'])
+                        ->maxSize(5120)
                         ->disk('local')
                         ->directory('exam-marks-imports')
                         ->required(),

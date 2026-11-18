@@ -6,6 +6,7 @@ use App\Enums\ExamStatus;
 use App\Http\Requests\StoreExamRequest;
 use App\Http\Requests\StoreExamSubjectRequest;
 use App\Http\Requests\UpdateExamRequest;
+use App\Jobs\GenerateExamFeesJob;
 use App\Models\Exam;
 use App\Models\ExamSubject;
 use App\Models\User;
@@ -66,7 +67,7 @@ class ExamWorkflowService
         $exam = $this->transition($exam, ExamStatus::Scheduled, $actor);
 
         if ($generateFees && $exam->hasFee()) {
-            $this->invoices->generateExamFees($exam, $actor);
+            $this->queueFees($exam, $actor);
         }
 
         return $exam;
@@ -133,9 +134,30 @@ class ExamWorkflowService
     }
 
     /**
+     * Queue exam fee invoice generation in chunks so large batches do not
+     * block the admin request.
+     */
+    public function queueFees(Exam $exam, ?User $actor = null): void
+    {
+        $this->assertFeesCanBeGenerated($exam);
+
+        GenerateExamFeesJob::dispatch($exam->id, $actor?->id);
+    }
+
+    /**
+     * Generate exam fee invoices synchronously. Prefer queueFees() from
+     * interactive requests; this remains for CLI/import workflows and tests.
+     *
      * @return array{created: int, skipped: int}
      */
     public function generateFees(Exam $exam, ?User $actor = null): array
+    {
+        $this->assertFeesCanBeGenerated($exam);
+
+        return $this->invoices->generateExamFees($exam, $actor);
+    }
+
+    protected function assertFeesCanBeGenerated(Exam $exam): void
     {
         if (! in_array($exam->status, [ExamStatus::Scheduled, ExamStatus::Ongoing], true)) {
             throw ValidationException::withMessages([
@@ -148,7 +170,5 @@ class ExamWorkflowService
                 'fee_amount' => 'Set an exam fee amount before generating invoices.',
             ]);
         }
-
-        return $this->invoices->generateExamFees($exam, $actor);
     }
 }

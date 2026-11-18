@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\PaymentMethod;
 use App\Enums\PaymentVoucherStatus;
+use App\Models\Concerns\LogsActivityWithContext;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class PaymentVoucher extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivityWithContext;
 
     protected $fillable = [
         'voucher_no',

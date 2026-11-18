@@ -94,18 +94,10 @@ class ExamResultResource extends Resource
                 Tables\Actions\Action::make('certificate')
                     ->label('Certificate PDF')
                     ->icon('heroicon-o-academic-cap')
-                    ->url(function (ExamResult $record) {
-                        $certificate = \App\Models\Certificate::query()
-                            ->where('student_id', $record->student_id)
-                            ->where('exam_id', $record->exam_id)
-                            ->first();
-
-                        return $certificate ? route('certificates.pdf', $certificate) : null;
-                    })
-                    ->visible(fn (ExamResult $record) => \App\Models\Certificate::query()
-                        ->where('student_id', $record->student_id)
-                        ->where('exam_id', $record->exam_id)
-                        ->exists())
+                    ->url(fn (ExamResult $record) => $record->certificate
+                        ? route('certificates.pdf', $record->certificate)
+                        : null)
+                    ->visible(fn (ExamResult $record) => $record->certificate !== null)
                     ->openUrlInNewTab(),
             ]);
     }
@@ -114,7 +106,7 @@ class ExamResultResource extends Resource
     {
         return parent::getEloquentQuery()
             ->withoutGlobalScopes()
-            ->with(['exam', 'student']);
+            ->with(['exam', 'student', 'certificate']);
     }
 
     public static function canCreate(): bool

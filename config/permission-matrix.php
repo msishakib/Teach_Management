@@ -32,6 +32,8 @@ return [
         'attendance',
         'leave_request',
         'exam',
+        'quiz',
+        'assignment',
         'fee',
         'payment',
         'voucher',
@@ -50,6 +52,13 @@ return [
         'attendance.override',
         'exam.publish',
         'exam.override',
+        'activity_log.view',
+        'health.view',
+        'media.view',
+        'media.upload',
+        'media.delete',
+        'media.view_private',
+        'payment.refund',
     ],
 
     /*
@@ -72,6 +81,7 @@ return [
             'report' => ['view', 'export'],
             'student' => ['view', 'export'],
             'enrollment' => ['view'],
+            'payment.refund' => [],
         ],
 
         'teacher' => [
@@ -85,14 +95,23 @@ return [
             'attendance' => ['view', 'create', 'update'],
             'leave_request' => ['view', 'create'],
             'exam' => ['view', 'create', 'update'],
+            'quiz' => ['view', 'create', 'update', 'delete'],
+            'assignment' => ['view', 'create', 'update', 'delete', 'approve'],
             'report' => ['view'],
+            'media.view' => [],
+            'media.upload' => [],
+            'media.view_private' => [],
         ],
 
         'student' => [
             'course' => ['view'],
             'enrollment' => ['view'],
+            'quiz' => ['view'],
+            'assignment' => ['view', 'create', 'update'],
             'fee' => ['view'],
             'payment' => ['view'],
+            'media.view' => [],
+            'media.upload' => [],
         ],
 
         'guardian' => [
@@ -102,6 +121,7 @@ return [
             'fee' => ['view'],
             'payment' => ['view'],
             'report' => ['view'],
+            'media.view' => [],
         ],
     ],
 ];

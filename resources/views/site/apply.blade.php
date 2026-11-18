@@ -70,6 +70,10 @@
                     {{ __('site.apply.submit') }} <x-heroicon-o-arrow-right class="size-5" aria-hidden="true" />
                 </button>
                 <p class="text-center text-xs text-muted">{{ __('site.apply.privacy') }}</p>
+                <p class="text-center text-sm text-muted">
+                    {{ __('site.apply.already') }}
+                    <a href="{{ route('admissions.track.form') }}" class="font-semibold text-primary-ink hover:underline">{{ __('site.track.short') }}</a>
+                </p>
             </form>
         </div>
     </x-section>

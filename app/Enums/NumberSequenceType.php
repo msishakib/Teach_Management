@@ -11,6 +11,8 @@ enum NumberSequenceType: string
     case PaymentVoucher = 'payment_voucher';
     case ReceiveVoucher = 'receive_voucher';
     case Certificate = 'certificate';
+    case Order = 'order';
+    case Registration = 'registration';
 
     public function prefixSettingKey(): string
     {

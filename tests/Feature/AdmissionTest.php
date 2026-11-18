@@ -2,11 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Enums\FeeFrequency;
+use App\Models\AdmissionApplication;
 use App\Models\Batch;
 use App\Models\Course;
-use App\Models\AdmissionApplication;
+use App\Models\FeeStructure;
+use App\Models\FeeType;
 use App\Models\User;
 use App\Services\AdmissionService;
+use Database\Seeders\ChartOfAccountsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -41,14 +45,28 @@ class AdmissionTest extends TestCase
             'phone' => $app->phone,
         ]);
 
-        $trackResponse->assertOk();
-        $trackResponse->assertSee($app->application_no);
+        $trackResponse->assertRedirect(route('admissions.track.form', ['locale' => 'en']));
+
+        $page = $this->get(route('admissions.track.form', ['locale' => 'en']));
+
+        $page->assertOk();
+        $page->assertSee($app->application_no);
+        $page->assertSee('Alice');
     }
 
     public function test_approve_creates_student_and_invoice(): void
     {
+        $this->seed(ChartOfAccountsSeeder::class);
+
         $course = Course::factory()->create();
         $batch = Batch::factory()->create(['course_id' => $course->id]);
+
+        FeeStructure::factory()->create([
+            'course_id' => $course->id,
+            'fee_type_id' => FeeType::factory()->tuition()->create()->id,
+            'amount' => 1000,
+            'frequency' => FeeFrequency::Monthly,
+        ]);
 
         $app = AdmissionApplication::query()->create([
             'application_no' => 'APP-1',
@@ -69,4 +87,3 @@ class AdmissionTest extends TestCase
         $this->assertDatabaseHas('admission_applications', ['application_no' => 'APP-1', 'status' => 'approved']);
     }
 }
-

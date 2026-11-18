@@ -3,20 +3,31 @@
 namespace App\Models;
 
 use App\Enums\EnrollmentStatus;
+use App\Enums\MediaCategory;
 use App\Enums\NoticeAudience;
 use App\Enums\RoleName;
 use App\Events\NoticePublished;
 use App\Models\Concerns\FlushesHomepageCache;
+use App\Models\Concerns\HasManagedMedia;
 use App\Support\PortalAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Schema;
+use Spatie\MediaLibrary\HasMedia;
 
-class Notice extends Model
+class Notice extends Model implements HasMedia
 {
-    use FlushesHomepageCache, HasFactory;
+    use FlushesHomepageCache, HasFactory, HasManagedMedia;
+
+    /**
+     * @return list<MediaCategory>
+     */
+    public function mediaCategories(): array
+    {
+        return [MediaCategory::NoticeAttachment];
+    }
 
     protected $fillable = [
         'title',

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\PaymentMethod;
 use App\Enums\ReceiptStatus;
+use App\Models\Concerns\LogsActivityWithContext;
 use App\Models\Scopes\PortalStudentOwnedScope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Receipt extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivityWithContext;
 
     protected static function booted(): void
     {

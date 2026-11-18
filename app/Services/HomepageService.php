@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\ExamResultStatus;
 use App\Enums\ExamStatus;
 use App\Enums\FeeFrequency;
+use App\Enums\MediaCategory;
 use App\Enums\NoticeAudience;
 use App\Enums\StudentStatus;
 use App\Models\Banner;
@@ -75,7 +76,7 @@ class HomepageService
         $courses = $this->courses();
 
         return [
-            'banners' => Banner::query()->active()->ordered()->get(),
+            'banners' => Banner::query()->active()->ordered()->with('media')->get(),
             'courses' => $courses,
             'categories' => $courses->pluck('category')->filter()->unique()->values(),
             'teachers' => $this->teachers(),
@@ -95,7 +96,7 @@ class HomepageService
     {
         return Course::query()
             ->where('is_active', true)
-            ->with(['profile', 'feeStructures'])
+            ->with(['profile', 'feeStructures', 'media'])
             ->get()
             ->sortBy([
                 fn (Course $a, Course $b) => ($a->profile?->sort_order ?? PHP_INT_MAX) <=> ($b->profile?->sort_order ?? PHP_INT_MAX),
@@ -107,12 +108,15 @@ class HomepageService
 
                 return [
                     'id' => $course->id,
+                    'code' => $course->code,
+                    'online' => $course->is_published && $course->hasOnlineComponent(),
                     'name' => $course->name,
                     'description' => $course->description,
                     'tagline' => $course->profile?->tagline,
                     'category' => $course->profile?->category,
                     'duration' => $course->profile?->duration,
                     'image' => $course->profile?->image,
+                    'image_media' => $course->mediaFor(MediaCategory::CourseThumbnail),
                     'featured' => (bool) $course->profile?->is_featured,
                     'price' => $price,
                     'price_period' => $period,
@@ -160,7 +164,7 @@ class HomepageService
         return TeacherProfile::query()
             ->where('is_featured', true)
             ->whereHas('teacher')
-            ->with('teacher')
+            ->with('teacher.media')
             ->orderBy('sort_order')
             ->orderBy('id')
             ->limit(12)
@@ -172,6 +176,7 @@ class HomepageService
                 'qualification' => $profile->qualification,
                 'bio' => $profile->bio,
                 'photo' => $profile->photo,
+                'photo_media' => $profile->teacher->mediaFor(MediaCategory::TeacherPhoto),
             ]);
     }
 

@@ -4,10 +4,18 @@
             <p class="glass mx-auto max-w-xl rounded-3xl p-10 text-center text-muted">{{ __('site.gallery.empty') }}</p>
         @else
             @php
-                $items = $images->map(fn ($image) => [
-                    'src' => public_image($image->image),
-                    'title' => $image->localized('title'),
-                ])->values();
+                $items = $images->map(function ($image) {
+                    $media = $image->mediaFor(\App\Enums\MediaCategory::Gallery);
+                    $responsive = $media?->responsiveImageData();
+
+                    return [
+                        'src' => $responsive['src'] ?? public_image($image->image),
+                        'srcset' => $responsive['srcset'] ?? '',
+                        'width' => $responsive['width'] ?? 640,
+                        'height' => $responsive['height'] ?? null,
+                        'title' => $image->localized('title'),
+                    ];
+                })->values();
             @endphp
 
             <div x-data="lightbox(@js($items))"
@@ -19,9 +27,18 @@
                         <li class="mb-3 break-inside-avoid sm:mb-4" data-reveal style="--d: {{ min($i % 4, 3) * 60 }}ms">
                             <button type="button" @click="show({{ $i }})" class="glass group block w-full overflow-hidden rounded-2xl p-1.5 transition duration-300 hover:-translate-y-1 hover:shadow-lift"
                                     aria-label="{{ __('site.gallery.open', ['title' => $item['title']]) }}">
-                                <img src="{{ $item['src'] }}" alt="{{ $item['title'] }}" width="640" height="{{ $i % 3 === 0 ? 800 : 480 }}"
-                                     loading="lazy" decoding="async"
-                                     class="w-full rounded-xl object-cover transition duration-500 group-hover:scale-[1.03] {{ $i % 3 === 0 ? 'aspect-[4/5]' : 'aspect-[4/3]' }}">
+                                @if ($images[$i]->mediaFor(\App\Enums\MediaCategory::Gallery))
+                                    <x-media-image
+                                        :media="$images[$i]->mediaFor(\App\Enums\MediaCategory::Gallery)"
+                                        :alt="$item['title']"
+                                        sizes="(max-width: 640px) 50vw, 25vw"
+                                        class="w-full rounded-xl object-cover transition duration-500 group-hover:scale-[1.03] {{ $i % 3 === 0 ? 'aspect-[4/5]' : 'aspect-[4/3]' }}"
+                                    />
+                                @else
+                                    <img src="{{ $item['src'] }}" alt="{{ $item['title'] }}" width="640" height="{{ $i % 3 === 0 ? 800 : 480 }}"
+                                         loading="lazy" decoding="async"
+                                         class="w-full rounded-xl object-cover transition duration-500 group-hover:scale-[1.03] {{ $i % 3 === 0 ? 'aspect-[4/5]' : 'aspect-[4/3]' }}">
+                                @endif
                             </button>
                         </li>
                     @endforeach
@@ -41,7 +58,13 @@
                     </button>
 
                     <figure class="max-h-full max-w-5xl">
-                        <img :src="current !== null ? items[current].src : ''" :alt="current !== null ? items[current].title : ''"
+                        <img :src="current !== null ? items[current].src : ''"
+                             :srcset="current !== null && items[current].srcset ? items[current].srcset : null"
+                             sizes="100vw"
+                             :width="current !== null ? items[current].width : null"
+                             :height="current !== null ? items[current].height : null"
+                             :alt="current !== null ? items[current].title : ''"
+                             loading="lazy" decoding="async"
                              class="max-h-[80dvh] w-auto max-w-full rounded-2xl object-contain shadow-2xl">
                         <figcaption class="mt-3 text-center text-sm font-semibold text-white/90" x-text="current !== null ? items[current].title : ''"></figcaption>
                     </figure>

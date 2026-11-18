@@ -1,9 +1,9 @@
 <x-filament-panels::page>
-    <form wire:submit.prevent="runReport" class="space-y-6">
+    <form wire:submit.prevent="runReport" wire:loading.class="opacity-70" wire:target="runReport" class="space-y-6">
         {{ $this->form }}
 
         <div class="flex flex-wrap gap-3">
-            <x-filament::button type="submit">
+            <x-filament::button type="submit" wire:target="runReport">
                 Run report
             </x-filament::button>
             <x-filament::button type="button" color="gray" wire:click="exportCsv">
@@ -14,6 +14,22 @@
             </x-filament::button>
         </div>
     </form>
+
+    {{-- Loading state: shown while the report query runs, so slow date ranges never look frozen. --}}
+    <div wire:loading.block wire:target="runReport" style="display: none" class="mt-6" role="status" aria-live="polite">
+        <x-filament::section>
+            <div class="flex items-center gap-3">
+                <x-filament::loading-indicator class="h-6 w-6 text-primary-500" />
+
+                <div>
+                    <p class="text-sm font-semibold">Generating report…</p>
+                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Large date ranges can take a few moments. Please wait.</p>
+                </div>
+            </div>
+        </x-filament::section>
+    </div>
+
+    <div wire:loading.remove wire:target="runReport">
 
     @if ($this->reportType === 'income_statement' && ! empty($this->report))
         <div class="mt-8 grid gap-6 md:grid-cols-2">

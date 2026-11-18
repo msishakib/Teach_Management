@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivityWithContext;
 use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
 {
+    use LogsActivityWithContext;
     protected $fillable = [
         'group',
         'key',

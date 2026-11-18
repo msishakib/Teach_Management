@@ -6,6 +6,7 @@ use App\Enums\UserType;
 use App\Filament\Concerns\HasStandardTable;
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
+use App\Rules\StrongPassword;
 use App\Services\UserService;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -55,11 +56,11 @@ class UserResource extends Resource
                             ->password()
                             ->revealable()
                             ->required(fn (string $operation): bool => $operation === 'create')
-                            ->minLength(8)
+                            ->rules([new StrongPassword()])
                             ->dehydrated(fn (?string $state): bool => filled($state))
                             ->helperText(fn (string $operation): ?string => $operation === 'edit'
                                 ? 'Leave blank to keep the current password.'
-                                : null),
+                                : 'Must meet the password policy configured in Settings > Security.'),
                     ])
                     ->columns(2),
 
@@ -100,6 +101,12 @@ class UserResource extends Resource
                     ->label('Roles')
                     ->badge()
                     ->formatStateUsing(fn (?string $state): string => filled($state) ? Str::headline($state) : '—'),
+                Tables\Columns\TextColumn::make('two_factor_confirmed_at')
+                    ->label('2FA')
+                    ->badge()
+                    ->formatStateUsing(fn ($state): string => $state ? 'Enabled' : 'Disabled')
+                    ->color(fn ($state): string => $state ? 'success' : 'gray')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -118,6 +125,15 @@ class UserResource extends Resource
                     ->searchable(),
             ])
             ->actions([
+                Tables\Actions\Action::make('resetTwoFactor')
+                    ->label('Reset 2FA')
+                    ->icon('heroicon-o-lock-open')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Reset two-factor authentication?')
+                    ->modalDescription('The user will need to set up two-factor authentication again.')
+                    ->visible(fn (User $record): bool => $record->hasConfirmedTwoFactorAuthentication())
+                    ->action(fn (User $record) => $record->clearTwoFactorAuthentication()),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
                     ->using(fn (User $record) => app(UserService::class)->delete(

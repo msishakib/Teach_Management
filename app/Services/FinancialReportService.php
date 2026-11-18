@@ -8,6 +8,7 @@ use App\Enums\StudentInvoiceStatus;
 use App\Enums\VoucherType;
 use App\Models\Account;
 use App\Models\Student;
+use App\Support\DateRange;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -44,8 +45,8 @@ class FinancialReportService
                 ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
                 ->where('journal_lines.account_id', $accountId)
                 ->where('journal_entries.status', JournalEntryStatus::Posted->value)
-                ->whereDate('journal_entries.entry_date', '>=', $fromDate)
-                ->whereDate('journal_entries.entry_date', '<=', $toDate)
+                ->where('journal_entries.entry_date', '>=', $fromDate)
+                ->where('journal_entries.entry_date', '<', DateRange::endExclusive($toDate))
                 ->orderBy('journal_entries.entry_date')
                 ->orderBy('journal_lines.id')
                 ->selectRaw("
@@ -267,8 +268,8 @@ class FinancialReportService
                 ->where('journal_entries.status', JournalEntryStatus::Posted->value)
                 ->where('journal_entries.voucher_type', VoucherType::Receipt->value)
                 ->where('accounts.is_cash_or_bank', true)
-                ->whereDate('journal_entries.entry_date', '>=', $fromDate)
-                ->whereDate('journal_entries.entry_date', '<=', $toDate)
+                ->where('journal_entries.entry_date', '>=', $fromDate)
+                ->where('journal_entries.entry_date', '<', DateRange::endExclusive($toDate))
                 ->groupBy('journal_entries.entry_date')
                 ->orderBy('journal_entries.entry_date')
                 ->selectRaw('journal_entries.entry_date, COALESCE(SUM(journal_lines.debit), 0) as total')
@@ -290,7 +291,7 @@ class FinancialReportService
                 ->where('journal_entries.status', JournalEntryStatus::Posted->value)
                 ->where('journal_entries.voucher_type', VoucherType::Receipt->value)
                 ->where('accounts.is_cash_or_bank', true)
-                ->whereYear('journal_entries.entry_date', $year)
+                ->whereBetween('journal_entries.entry_date', [$year.'-01-01', $year.'-12-31'])
                 ->groupBy(DB::raw($this->monthExpression('journal_entries.entry_date')))
                 ->orderBy(DB::raw($this->monthExpression('journal_entries.entry_date')))
                 ->selectRaw($this->monthExpression('journal_entries.entry_date').' as month, COALESCE(SUM(journal_lines.debit), 0) as total')
@@ -355,8 +356,8 @@ class FinancialReportService
 
             $invoices = DB::table('student_invoices')
                 ->where('student_id', $studentId)
-                ->whereDate('due_date', '>=', $fromDate)
-                ->whereDate('due_date', '<=', $toDate)
+                ->where('due_date', '>=', $fromDate)
+                ->where('due_date', '<', DateRange::endExclusive($toDate))
                 ->selectRaw("
                     due_date as txn_date,
                     invoice_no as reference,
@@ -372,8 +373,8 @@ class FinancialReportService
                 ->join('student_invoices', 'student_invoices.id', '=', 'receipt_allocations.student_invoice_id')
                 ->where('receipts.student_id', $studentId)
                 ->where('receipts.status', 'posted')
-                ->whereDate('receipts.date', '>=', $fromDate)
-                ->whereDate('receipts.date', '<=', $toDate)
+                ->where('receipts.date', '>=', $fromDate)
+                ->where('receipts.date', '<', DateRange::endExclusive($toDate))
                 ->selectRaw("
                     receipts.date as txn_date,
                     receipts.receipt_no as reference,
@@ -476,11 +477,11 @@ class FinancialReportService
                 })
                 ->whereIn('journal_lines.account_id', $accountIds)
                 ->where('journal_entries.status', JournalEntryStatus::Posted->value)
-                ->whereDate('journal_entries.entry_date', '>=', $fromDate)
-                ->whereDate('journal_entries.entry_date', '<=', $toDate)
+                ->where('journal_entries.entry_date', '>=', $fromDate)
+                ->where('journal_entries.entry_date', '<', DateRange::endExclusive($toDate))
                 ->orderBy('journal_entries.entry_date')
                 ->orderBy('journal_lines.id')
-                ->selectRaw("
+                ->selectRaw('
                     journal_lines.id,
                     accounts.code as account_code,
                     accounts.name as account_name,
@@ -497,7 +498,7 @@ class FinancialReportService
                             ORDER BY journal_entries.entry_date, journal_lines.id
                             ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
                         ) as running_balance
-                ")
+                ')
                 ->get();
         });
     }
@@ -517,8 +518,8 @@ class FinancialReportService
             ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
             ->join('accounts', 'accounts.id', '=', 'journal_lines.account_id')
             ->where('journal_entries.status', JournalEntryStatus::Posted->value)
-            ->whereDate('journal_entries.entry_date', '>=', $fromDate)
-            ->whereDate('journal_entries.entry_date', '<=', $toDate)
+            ->where('journal_entries.entry_date', '>=', $fromDate)
+            ->where('journal_entries.entry_date', '<', DateRange::endExclusive($toDate))
             ->whereIn('accounts.type', $types)
             ->where('accounts.is_group', false)
             ->groupBy('accounts.id', 'accounts.code', 'accounts.name', 'accounts.type')
@@ -547,7 +548,7 @@ class FinancialReportService
         $moves = DB::table('journal_lines')
             ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
             ->where('journal_entries.status', JournalEntryStatus::Posted->value)
-            ->whereDate('journal_entries.entry_date', '<=', $asOfDate)
+            ->where('journal_entries.entry_date', '<', DateRange::endExclusive($asOfDate))
             ->groupBy('journal_lines.account_id')
             ->selectRaw('
                 journal_lines.account_id,
@@ -629,6 +630,7 @@ class FinancialReportService
 
     /**
      * @template T
+     *
      * @param  callable(): T  $callback
      * @return T
      */

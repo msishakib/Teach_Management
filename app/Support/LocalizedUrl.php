@@ -44,7 +44,7 @@ class LocalizedUrl
      */
     protected static function pageRoutes(): array
     {
-        return ['home', 'apply', 'notices.index', 'notices.show', 'gallery'];
+        return ['home', 'apply', 'register', 'notices.index', 'notices.show', 'gallery', 'courses.show'];
     }
 
     /**

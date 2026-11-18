@@ -9,6 +9,7 @@ use App\Models\Course;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Forms;
+use Illuminate\Database\Eloquent\Builder;
 
 class AdmissionApplicationResource extends Resource
 {
@@ -56,6 +57,11 @@ class AdmissionApplicationResource extends Resource
                     })
                     ->color('danger'),
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with('course');
     }
 
     public static function getPages(): array

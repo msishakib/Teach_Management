@@ -10,6 +10,9 @@
         ['href' => route('filament.teacher.auth.login'), 'label' => __('site.nav.teacher_login'), 'icon' => 'user-group'],
         ['href' => route('filament.admin.auth.login'), 'label' => __('site.nav.admin_login'), 'icon' => 'shield-check'],
     ];
+    $panelHomeUrl = \App\Support\PortalAccess::panelHomeUrl();
+    $homeUrl = public_home_url();
+    $coursesUrl = (request()->routeIs('home') ? '' : $homeUrl).'#courses';
     $langUrls = \App\Support\LocalizedUrl::alternates();
     $initials = \Illuminate\Support\Str::of($site['name'])->explode(' ')->filter()->take(2)->map(fn ($w) => mb_substr($w, 0, 1))->implode('');
 @endphp
@@ -28,7 +31,7 @@
         :class="scrolled ? 'py-2' : 'py-3.5 xl:py-4'"
     >
         {{-- Brand --}}
-        <a href="{{ route('home') }}" class="flex min-w-0 shrink items-center gap-3 rounded-xl" aria-label="{{ $site['name'] }}">
+        <a href="{{ $homeUrl }}" class="flex min-w-0 shrink items-center gap-3 rounded-xl" aria-label="{{ $site['name'] }}">
             @if ($site['logo'])
                 <img src="{{ $site['logo'] }}" alt="" width="40" height="40" decoding="async"
                      class="size-10 shrink-0 rounded-xl object-contain transition-transform duration-300"
@@ -81,27 +84,40 @@
                 <x-heroicon-o-moon class="size-5" x-show="!dark" />
             </button>
 
-            {{-- Login dropdown (desktop) --}}
-            <div class="relative hidden xl:block" @click.outside="loginOpen = false">
-                <button type="button" @click="loginOpen = !loginOpen" :aria-expanded="loginOpen" aria-haspopup="true"
-                        class="btn btn-ghost !py-2.5">
-                    {{ __('site.nav.login') }}
-                    <x-heroicon-o-chevron-down class="size-4 transition-transform" ::class="loginOpen ? 'rotate-180' : ''" />
-                </button>
-                <div x-show="loginOpen" x-cloak x-transition.origin.top.right.duration.150ms
-                     class="glass-strong absolute right-0 mt-2 w-60 rounded-2xl p-2 shadow-lift">
-                    @foreach ($logins as $login)
-                        <a href="{{ $login['href'] }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-primary/10">
-                            <span class="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary-ink">
-                                <x-dynamic-component :component="'heroicon-o-'.$login['icon']" class="size-4" />
-                            </span>
-                            {{ $login['label'] }}
-                        </a>
-                    @endforeach
+            {{-- Auth CTA: Dashboard when signed in; Login menu for guests --}}
+            @if ($panelHomeUrl)
+                <a href="{{ $panelHomeUrl }}" class="btn btn-primary !py-2.5">
+                    <x-heroicon-o-squares-2x2 class="size-4" aria-hidden="true" />
+                    <span class="hidden sm:inline">{{ __('site.nav.dashboard') }}</span>
+                </a>
+                <a href="{{ $coursesUrl }}" class="btn btn-ghost hidden !py-2.5 sm:inline-flex">
+                    {{ __('site.nav.buy_courses') }}
+                </a>
+            @else
+                <div class="relative hidden sm:block" @click.outside="loginOpen = false">
+                    <button type="button" @click="loginOpen = !loginOpen" :aria-expanded="loginOpen" aria-haspopup="true"
+                            class="btn btn-ghost !py-2.5">
+                        {{ __('site.nav.login') }}
+                        <x-heroicon-o-chevron-down class="size-4 transition-transform" ::class="loginOpen ? 'rotate-180' : ''" />
+                    </button>
+                    <div x-show="loginOpen" x-cloak x-transition.origin.top.right.duration.150ms
+                         class="glass-strong absolute right-0 mt-2 w-60 rounded-2xl p-2 shadow-lift">
+                        @foreach ($logins as $login)
+                            <a href="{{ $login['href'] }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors hover:bg-primary/10">
+                                <span class="grid size-8 place-items-center rounded-lg bg-primary/10 text-primary-ink">
+                                    <x-dynamic-component :component="'heroicon-o-'.$login['icon']" class="size-4" />
+                                </span>
+                                {{ $login['label'] }}
+                            </a>
+                        @endforeach
+                    </div>
                 </div>
-            </div>
-
-            <a href="{{ route('apply') }}" class="btn btn-primary hidden !py-2.5 sm:inline-flex">{{ __('site.nav.apply') }}</a>
+                <a href="{{ route('register') }}" class="btn btn-ghost hidden !py-2.5 sm:inline-flex">
+                    <x-heroicon-o-user-plus class="size-4" aria-hidden="true" />
+                    {{ __('site.nav.register') }}
+                </a>
+                <a href="{{ $coursesUrl }}" class="btn btn-primary hidden !py-2.5 sm:inline-flex">{{ __('site.nav.buy_courses') }}</a>
+            @endif
 
             {{-- Burger --}}
             <button type="button" x-ref="burger" @click="open = true" :aria-expanded="open" aria-controls="mobile-menu"
@@ -135,13 +151,25 @@
             </nav>
 
             <div class="flex flex-col gap-2">
-                <p class="px-1 text-xs font-bold uppercase tracking-wider text-muted">{{ __('site.nav.login') }}</p>
-                @foreach ($logins as $login)
-                    <a href="{{ $login['href'] }}" class="btn btn-ghost !justify-start">
-                        <x-dynamic-component :component="'heroicon-o-'.$login['icon']" class="size-5 text-primary-ink" />
-                        {{ $login['label'] }}
+                @if ($panelHomeUrl)
+                    <p class="px-1 text-xs font-bold uppercase tracking-wider text-muted">{{ __('site.nav.my_account') }}</p>
+                    <a href="{{ $panelHomeUrl }}" class="btn btn-ghost !justify-start">
+                        <x-heroicon-o-squares-2x2 class="size-5 text-primary-ink" />
+                        {{ __('site.nav.dashboard') }}
                     </a>
-                @endforeach
+                @else
+                    <p class="px-1 text-xs font-bold uppercase tracking-wider text-muted">{{ __('site.nav.login') }}</p>
+                    @foreach ($logins as $login)
+                        <a href="{{ $login['href'] }}" class="btn btn-ghost !justify-start">
+                            <x-dynamic-component :component="'heroicon-o-'.$login['icon']" class="size-5 text-primary-ink" />
+                            {{ $login['label'] }}
+                        </a>
+                    @endforeach
+                    <a href="{{ route('register') }}" @click="open = false" class="btn btn-primary !justify-start">
+                        <x-heroicon-o-user-plus class="size-5" />
+                        {{ __('site.nav.register') }}
+                    </a>
+                @endif
             </div>
 
             <div class="mt-auto flex flex-col gap-4">
@@ -149,7 +177,7 @@
                     <a href="{{ $langUrls['en'] }}" lang="en" hreflang="en" class="flex-1 rounded-full px-4 py-2 text-center {{ app()->getLocale() === 'en' ? 'bg-primary text-white' : 'text-muted' }}">English</a>
                     <a href="{{ $langUrls['bn'] }}" lang="bn" hreflang="bn" class="flex-1 rounded-full px-4 py-2 text-center {{ app()->getLocale() === 'bn' ? 'bg-primary text-white' : 'text-muted' }}">বাংলা</a>
                 </div>
-                <a href="{{ route('apply') }}" class="btn btn-primary w-full">{{ __('site.nav.apply') }}</a>
+                <a href="{{ $coursesUrl }}" @click="open = false" class="btn btn-primary w-full">{{ __('site.nav.buy_courses') }}</a>
             </div>
         </div>
     </div>

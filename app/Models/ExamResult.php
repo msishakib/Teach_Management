@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ExamResult extends Model
 {
@@ -65,6 +66,12 @@ class ExamResult extends Model
     public function items(): HasMany
     {
         return $this->hasMany(ExamResultItem::class);
+    }
+
+    public function certificate(): HasOne
+    {
+        return $this->hasOne(Certificate::class, 'student_id', 'student_id')
+            ->whereColumn('certificates.exam_id', 'exam_results.exam_id');
     }
 
     public function isPublished(): bool

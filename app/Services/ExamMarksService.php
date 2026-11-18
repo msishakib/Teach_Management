@@ -291,6 +291,48 @@ class ExamMarksService
     }
 
     /**
+     * Subject options for the active actor in two queries (exams then subjects)
+     * instead of one subject query per exam.
+     *
+     * @return array<int, string>
+     */
+    public function subjectOptionsForActor(User $user): array
+    {
+        $exams = $this->examsForActor($user);
+
+        if ($exams->isEmpty()) {
+            return [];
+        }
+
+        $query = ExamSubject::query()
+            ->with('subject')
+            ->whereIn('exam_id', $exams->pluck('id'))
+            ->orderBy('exam_date');
+
+        $isAdmin = $user->can(PermissionName::make('exam', 'override'))
+            || $user->hasAnyRole(['super_admin', 'admin']);
+
+        if (! $isAdmin) {
+            $teacher = $user->teacher;
+
+            if (! $teacher) {
+                return [];
+            }
+
+            $query->where('teacher_id', $teacher->id);
+        }
+
+        $examNames = $exams->pluck('name', 'id');
+
+        return $query->get()
+            ->mapWithKeys(fn (ExamSubject $subject): array => [
+                $subject->id => ($examNames[$subject->exam_id] ?? 'Exam')
+                    .' — '.($subject->subject?->name ?? 'Subject'),
+            ])
+            ->all();
+    }
+
+    /**
      * @return array{subjects_total: int, subjects_complete: int, enrolled: int, percent: float}
      */
     public function progress(Exam $exam): array

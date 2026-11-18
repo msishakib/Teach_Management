@@ -94,6 +94,13 @@ class PermissionCatalogService
         $actions = config('permission-matrix.actions');
 
         foreach ($moduleActions as $module => $moduleActionList) {
+            // Matrix keys containing a dot are literal "extra" permissions.
+            if (str_contains($module, '.')) {
+                $permissions[] = $module;
+
+                continue;
+            }
+
             $resolvedActions = in_array('*', $moduleActionList, true)
                 ? $actions
                 : $moduleActionList;
@@ -103,7 +110,7 @@ class PermissionCatalogService
             }
         }
 
-        return $permissions;
+        return array_values(array_unique($permissions));
     }
 
     /**

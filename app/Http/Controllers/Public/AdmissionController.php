@@ -2,19 +2,22 @@
 
 namespace App\Http\Controllers\Public;
 
+use App\Enums\NumberSequenceType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreAdmissionApplicationRequest;
 use App\Models\AdmissionApplication;
+use App\Models\Course;
+use App\Models\StudentRegistration;
 use App\Services\NumberGeneratorService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class AdmissionController extends Controller
 {
     public function showApply()
     {
         $request = request();
-        $courses = \App\Models\Course::query()->orderBy('name')->get(['id','name']);
+        $courses = Course::query()->orderBy('name')->get(['id', 'name']);
 
         return view('site.apply', [
             'courses' => $courses,
@@ -41,7 +44,7 @@ class AdmissionController extends Controller
         }
         $data['documents'] = $documents;
 
-        $data['application_no'] = $numbers->next(\App\Enums\NumberSequenceType::Admission);
+        $data['application_no'] = $numbers->next(NumberSequenceType::Admission);
 
         $application = AdmissionApplication::query()->create($data);
 
@@ -54,27 +57,79 @@ class AdmissionController extends Controller
     public function success(string $application_no)
     {
         $application = AdmissionApplication::query()->where('application_no', $application_no)->firstOrFail();
+
         return view('site.apply_success', compact('application'));
     }
 
-    public function trackForm()
+    public function trackForm(Request $request)
     {
-        return view('site.track_application');
+        $lookup = $request->session()->get('track_lookup');
+        $lookup = is_array($lookup) ? $lookup : null;
+
+        $application = null;
+        $registration = null;
+
+        if (filled($lookup['id'] ?? null)) {
+            if (($lookup['type'] ?? null) === 'registration') {
+                $registration = StudentRegistration::query()->find($lookup['id']);
+            } else {
+                $application = AdmissionApplication::query()
+                    ->with(['course', 'batch'])
+                    ->find($lookup['id']);
+            }
+        }
+
+        $queryType = $request->query('type');
+        $queryType = is_string($queryType) ? $queryType : 'admission';
+
+        $queryNumber = $request->query('number');
+        $queryNumber = is_string($queryNumber) ? $queryNumber : null;
+
+        $type = old('type', $lookup['type'] ?? $queryType);
+        if (! in_array($type, ['admission', 'registration'], true)) {
+            $type = 'admission';
+        }
+
+        $oldNumber = old('application_no');
+        $number = is_string($oldNumber) ? $oldNumber : ($lookup['number'] ?? $queryNumber);
+
+        return view('site.track_application', [
+            'application' => $application,
+            'registration' => $registration,
+            'type' => $type,
+            'searched' => $lookup !== null,
+            'number' => $number,
+        ]);
     }
 
     public function track(Request $request)
     {
         $data = $request->validate([
-            'application_no' => ['required','string'],
-            'phone' => ['required','string'],
+            'type' => ['nullable', Rule::in(['admission', 'registration'])],
+            'application_no' => ['required', 'string', 'max:50'],
+            'phone' => ['required', 'string', 'max:30'],
         ]);
 
-        $application = AdmissionApplication::query()
-            ->where('application_no', $data['application_no'])
-            ->where('phone', $data['phone'])
-            ->first();
+        $type = $data['type'] ?? 'admission';
+        $number = trim($data['application_no']);
+        $phone = trim($data['phone']);
 
-        return view('site.track_application', compact('application'));
+        $record = $type === 'registration'
+            ? StudentRegistration::query()
+                ->where('registration_no', $number)
+                ->where('phone', $phone)
+                ->first()
+            : AdmissionApplication::query()
+                ->where('application_no', $number)
+                ->where('phone', $phone)
+                ->first();
+
+        $request->session()->flash('track_lookup', [
+            'type' => $type,
+            'id' => $record?->getKey(),
+            'number' => $number,
+        ]);
+
+        return redirect()->route('admissions.track.form');
     }
 }
-

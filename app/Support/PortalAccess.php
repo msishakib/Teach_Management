@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Enums\RoleName;
+use App\Enums\UserType;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
@@ -28,6 +29,28 @@ final class PortalAccess
             RoleName::Admin->value,
             RoleName::Accountant->value,
         ]);
+    }
+
+    /**
+     * Public-site CTA: which Filament panel home URL the signed-in user should open.
+     */
+    public static function panelHomeUrl(?User $user = null): ?string
+    {
+        $user ??= self::user();
+
+        if (! $user) {
+            return null;
+        }
+
+        if (self::isStaff($user) || $user->type === UserType::Admin) {
+            return url('/admin');
+        }
+
+        if (self::isTeacher($user) || $user->type === UserType::Teacher) {
+            return url('/teacher');
+        }
+
+        return url('/student');
     }
 
     public static function isTeacher(?User $user = null): bool

@@ -2,19 +2,29 @@
 
 @php
     $explore = app(\App\Services\MenuService::class)->links(\App\Enums\MenuLocation::Footer);
-    $account = [
-        [route('apply'), __('site.nav.apply')],
-        [route('filament.student.auth.login'), __('site.nav.student_login')],
-        [route('filament.teacher.auth.login'), __('site.nav.teacher_login')],
-        [route('filament.admin.auth.login'), __('site.nav.admin_login')],
-    ];
+    $panelHomeUrl = \App\Support\PortalAccess::panelHomeUrl();
+    $homeUrl = public_home_url();
+    $coursesUrl = (request()->routeIs('home') ? '' : $homeUrl).'#courses';
+    $account = $panelHomeUrl
+        ? [
+            [route('admissions.track.form'), __('site.track.short')],
+            [$coursesUrl, __('site.nav.buy_courses')],
+            [$panelHomeUrl, __('site.nav.dashboard')],
+        ]
+        : [
+            [route('admissions.track.form'), __('site.track.short')],
+            [$coursesUrl, __('site.nav.buy_courses')],
+            [route('filament.student.auth.login'), __('site.nav.student_login')],
+            [route('filament.teacher.auth.login'), __('site.nav.teacher_login')],
+            [route('filament.admin.auth.login'), __('site.nav.admin_login')],
+        ];
     $networkLabels = ['facebook' => 'Facebook', 'youtube' => 'YouTube', 'instagram' => 'Instagram', 'linkedin' => 'LinkedIn', 'twitter' => 'X', 'whatsapp' => 'WhatsApp'];
 @endphp
 
 <footer class="relative mt-8 border-t border-line" aria-label="{{ __('site.footer.label') }}">
     <div class="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr] lg:px-8">
         <div class="space-y-4">
-            <a href="{{ route('home') }}" class="inline-flex items-center gap-3">
+            <a href="{{ $homeUrl }}" class="inline-flex items-center gap-3">
                 @if ($site['logo'])
                     <img src="{{ $site['logo'] }}" alt="" width="40" height="40" loading="lazy" decoding="async" class="size-10 rounded-xl object-contain">
                 @endif

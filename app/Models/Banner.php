@@ -2,15 +2,26 @@
 
 namespace App\Models;
 
+use App\Enums\MediaCategory;
 use App\Models\Concerns\ConvertsImagesToWebp;
 use App\Models\Concerns\FlushesHomepageCache;
 use App\Models\Concerns\HasLocalizedColumns;
+use App\Models\Concerns\HasManagedMedia;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\MediaLibrary\HasMedia;
 
-class Banner extends Model
+class Banner extends Model implements HasMedia
 {
-    use ConvertsImagesToWebp, FlushesHomepageCache, HasLocalizedColumns;
+    use ConvertsImagesToWebp, FlushesHomepageCache, HasLocalizedColumns, HasManagedMedia;
+
+    /**
+     * @return list<MediaCategory>
+     */
+    public function mediaCategories(): array
+    {
+        return [MediaCategory::HomepageBanner];
+    }
 
     /** @var list<string> */
     protected array $webpColumns = ['image'];

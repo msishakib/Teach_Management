@@ -6,6 +6,7 @@ use App\Enums\AccountType;
 use App\Enums\JournalEntryStatus;
 use App\Models\Account;
 use App\Models\AccountBalanceDaily;
+use App\Support\DateRange;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +36,7 @@ class AccountBalanceService
             ->where('journal_entries.status', JournalEntryStatus::Posted->value);
 
         if ($asOf !== null) {
-            $query->whereDate('journal_entries.entry_date', '<=', $this->toDateString($asOf));
+            $query->where('journal_entries.entry_date', '<', DateRange::endExclusive($this->toDateString($asOf)));
         }
 
         $totals = $query
@@ -64,8 +65,8 @@ class AccountBalanceService
         if ($this->shouldUseDailySummary($fromDate, $toDate) && $this->dailySummaryAvailable()) {
             $totals = DB::table('account_balances_daily')
                 ->where('account_id', $accountId)
-                ->whereDate('date', '>=', $fromDate)
-                ->whereDate('date', '<=', $toDate)
+                ->where('date', '>=', $fromDate)
+                ->where('date', '<', DateRange::endExclusive($toDate))
                 ->selectRaw('COALESCE(SUM(debit_total), 0) as debit_total, COALESCE(SUM(credit_total), 0) as credit_total')
                 ->first();
         } else {
@@ -73,8 +74,8 @@ class AccountBalanceService
                 ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
                 ->where('journal_lines.account_id', $accountId)
                 ->where('journal_entries.status', JournalEntryStatus::Posted->value)
-                ->whereDate('journal_entries.entry_date', '>=', $fromDate)
-                ->whereDate('journal_entries.entry_date', '<=', $toDate)
+                ->where('journal_entries.entry_date', '>=', $fromDate)
+                ->where('journal_entries.entry_date', '<', DateRange::endExclusive($toDate))
                 ->selectRaw('COALESCE(SUM(journal_lines.debit), 0) as debit_total, COALESCE(SUM(journal_lines.credit), 0) as credit_total')
                 ->first();
         }
@@ -97,8 +98,8 @@ class AccountBalanceService
 
         if ($this->shouldUseDailySummary($fromDate, $toDate) && $this->dailySummaryAvailable()) {
             return DB::table('account_balances_daily')
-                ->whereDate('date', '>=', $fromDate)
-                ->whereDate('date', '<=', $toDate)
+                ->where('date', '>=', $fromDate)
+                ->where('date', '<', DateRange::endExclusive($toDate))
                 ->groupBy('account_id')
                 ->selectRaw('account_id, COALESCE(SUM(debit_total), 0) as debit_total, COALESCE(SUM(credit_total), 0) as credit_total')
                 ->get();
@@ -107,8 +108,8 @@ class AccountBalanceService
         return DB::table('journal_lines')
             ->join('journal_entries', 'journal_entries.id', '=', 'journal_lines.journal_entry_id')
             ->where('journal_entries.status', JournalEntryStatus::Posted->value)
-            ->whereDate('journal_entries.entry_date', '>=', $fromDate)
-            ->whereDate('journal_entries.entry_date', '<=', $toDate)
+            ->where('journal_entries.entry_date', '>=', $fromDate)
+            ->where('journal_entries.entry_date', '<', DateRange::endExclusive($toDate))
             ->groupBy('journal_lines.account_id')
             ->selectRaw('journal_lines.account_id as account_id, COALESCE(SUM(journal_lines.debit), 0) as debit_total, COALESCE(SUM(journal_lines.credit), 0) as credit_total')
             ->get();
@@ -175,11 +176,11 @@ class AccountBalanceService
             ->selectRaw('journal_lines.account_id as account_id, journal_entries.entry_date as date, COALESCE(SUM(journal_lines.debit), 0) as debit_total, COALESCE(SUM(journal_lines.credit), 0) as credit_total');
 
         if ($from !== null) {
-            $query->whereDate('journal_entries.entry_date', '>=', $from);
+            $query->where('journal_entries.entry_date', '>=', $from);
         }
 
         if ($to !== null) {
-            $query->whereDate('journal_entries.entry_date', '<=', $to);
+            $query->where('journal_entries.entry_date', '<', DateRange::endExclusive($to));
         }
 
         $rows = $query->get();

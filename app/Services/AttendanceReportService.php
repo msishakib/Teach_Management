@@ -6,6 +6,7 @@ use App\Enums\EnrollmentStatus;
 use App\Enums\StudentAttendanceStatus;
 use App\Enums\StudentStatus;
 use App\Models\Batch;
+use App\Support\DateRange;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -117,11 +118,11 @@ class AttendanceReportService
                 }
 
                 if ($from) {
-                    $join->whereDate('attendance_sessions.date', '>=', $from->toDateString());
+                    $join->where('attendance_sessions.date', '>=', $from->toDateString());
                 }
 
                 if ($to) {
-                    $join->whereDate('attendance_sessions.date', '<=', $to->toDateString());
+                    $join->where('attendance_sessions.date', '<', DateRange::endExclusive($to->toDateString()));
                 }
             })
             ->where('students.status', StudentStatus::Active->value)
@@ -161,7 +162,8 @@ class AttendanceReportService
             ->join('attendance_sessions', 'attendance_sessions.id', '=', 'student_attendances.attendance_session_id')
             ->join('students', 'students.id', '=', 'student_attendances.student_id')
             ->join('batches', 'batches.id', '=', 'attendance_sessions.batch_id')
-            ->whereDate('attendance_sessions.date', $dateString)
+            ->where('attendance_sessions.date', '>=', $dateString)
+            ->where('attendance_sessions.date', '<', DateRange::endExclusive($dateString))
             ->where('student_attendances.status', StudentAttendanceStatus::Absent->value)
             ->whereNull('students.deleted_at')
             ->when($batchId, fn ($q) => $q->where('attendance_sessions.batch_id', $batchId))
@@ -204,11 +206,11 @@ class AttendanceReportService
                 }
 
                 if ($from) {
-                    $join->whereDate('attendance_sessions.date', '>=', $from->toDateString());
+                    $join->where('attendance_sessions.date', '>=', $from->toDateString());
                 }
 
                 if ($to) {
-                    $join->whereDate('attendance_sessions.date', '<=', $to->toDateString());
+                    $join->where('attendance_sessions.date', '<', DateRange::endExclusive($to->toDateString()));
                 }
             })
             ->where('students.status', StudentStatus::Active->value)

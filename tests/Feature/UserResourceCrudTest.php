@@ -38,7 +38,7 @@ class UserResourceCrudTest extends TestCase
             ->fillForm([
                 'name' => 'Finance User',
                 'email' => 'finance@example.com',
-                'password' => 'password123',
+                'password' => 'Str0ng!Passw0rd',
                 'type' => UserType::Admin->value,
                 'roles' => [$roleId],
             ])

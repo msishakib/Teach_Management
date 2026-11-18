@@ -124,29 +124,19 @@ class ExamResource extends Resource
                 Tables\Columns\TextColumn::make('marks_progress')
                     ->label('Marks progress')
                     ->getStateUsing(function (Exam $record): string {
-                        static $cache = [];
-
-                        if (! isset($cache[$record->id])) {
-                            $cache[$record->id] = app(ExamMarksService::class)->progress($record);
-                        }
-
-                        $progress = $cache[$record->id];
+                        $progress = $record->marks_progress
+                            ?? app(ExamMarksService::class)->progress($record);
 
                         return "{$progress['subjects_complete']}/{$progress['subjects_total']} ({$progress['percent']}%)";
                     })
                     ->badge()
                     ->color(function (Exam $record): string {
-                        static $cache = [];
-
-                        if (! isset($cache[$record->id])) {
-                            $cache[$record->id] = app(ExamMarksService::class)->progress($record);
-                        }
-
-                        $percent = $cache[$record->id]['percent'];
+                        $progress = $record->marks_progress
+                            ?? app(ExamMarksService::class)->progress($record);
 
                         return match (true) {
-                            $percent >= 100 => 'success',
-                            $percent > 0 => 'warning',
+                            $progress['percent'] >= 100 => 'success',
+                            $progress['percent'] > 0 => 'warning',
                             default => 'gray',
                         };
                     }),

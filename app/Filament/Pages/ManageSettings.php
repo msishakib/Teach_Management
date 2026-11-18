@@ -2,6 +2,8 @@
 
 namespace App\Filament\Pages;
 
+use App\Enums\MediaCategory;
+use App\Services\Media\MediaQuotaService;
 use App\Services\SettingsService;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -59,6 +61,8 @@ class ManageSettings extends Page implements HasForms
                                 Forms\Components\FileUpload::make('general.logo')
                                     ->label('Logo')
                                     ->image()
+                                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'])
+                                    ->maxSize(2048)
                                     ->directory('settings')
                                     ->visibility('public')
                                     ->imageEditor()
@@ -222,6 +226,111 @@ class ManageSettings extends Page implements HasForms
                             ])
                             ->columns(2),
 
+                        Forms\Components\Tabs\Tab::make('Security')
+                            ->schema([
+                                Forms\Components\TextInput::make('security.login_max_attempts')
+                                    ->label('Login attempts per minute')
+                                    ->helperText('Failed sign-in attempts allowed per IP address per minute.')
+                                    ->numeric()
+                                    ->required()
+                                    ->minValue(3)
+                                    ->maxValue(60)
+                                    ->integer(),
+                                Forms\Components\TextInput::make('security.session_timeout_minutes')
+                                    ->label('Session timeout (minutes)')
+                                    ->helperText('Inactive users are signed out after this many minutes. Set 0 to disable.')
+                                    ->numeric()
+                                    ->required()
+                                    ->minValue(0)
+                                    ->maxValue(1440)
+                                    ->integer(),
+                                Forms\Components\TextInput::make('security.password_min_length')
+                                    ->label('Minimum password length')
+                                    ->numeric()
+                                    ->required()
+                                    ->minValue(8)
+                                    ->maxValue(64)
+                                    ->integer(),
+                                Forms\Components\Toggle::make('security.password_mixed_case')
+                                    ->label('Require upper and lower case letters')
+                                    ->inline(false),
+                                Forms\Components\Toggle::make('security.password_numbers')
+                                    ->label('Require numbers')
+                                    ->inline(false),
+                                Forms\Components\Toggle::make('security.password_symbols')
+                                    ->label('Require symbols')
+                                    ->inline(false),
+                                Forms\Components\Toggle::make('security.password_uncompromised')
+                                    ->label('Reject known compromised passwords')
+                                    ->helperText('Checks passwords against the Have I Been Pwned API when changed.')
+                                    ->inline(false),
+                                Forms\Components\Toggle::make('security.two_factor_admin_required')
+                                    ->label('Require two-factor authentication for admins')
+                                    ->helperText('Admins without 2FA are redirected to the setup page after signing in.')
+                                    ->inline(false),
+                            ])
+                            ->columns(2),
+
+                        Forms\Components\Tabs\Tab::make('Media')
+                            ->schema([
+                                Forms\Components\Section::make('Storage disks')
+                                    ->description('Choose the disk used for each media category. Documents are always kept on a private disk and are never publicly reachable.')
+                                    ->schema(array_map(
+                                        fn (MediaCategory $category): Forms\Components\Select => Forms\Components\Select::make($category->diskSettingKey())
+                                            ->label($category->label())
+                                            ->options($this->diskOptionsFor($category))
+                                            ->default($category->defaultDisk())
+                                            ->required()
+                                            ->disabled($category->isPrivate())
+                                            ->dehydrated(true)
+                                            ->helperText($category->isPrivate() ? 'Private (required)' : null),
+                                        MediaCategory::cases(),
+                                    ))
+                                    ->columns(3),
+
+                                Forms\Components\Section::make('Upload limits')
+                                    ->description('Maximum size per file type (KB).')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('media.image_max_size_kb')
+                                            ->label('Image max size (KB)')
+                                            ->numeric()->integer()->required()->minValue(1),
+                                        Forms\Components\TextInput::make('media.document_max_size_kb')
+                                            ->label('Document max size (KB)')
+                                            ->numeric()->integer()->required()->minValue(1),
+                                        Forms\Components\TextInput::make('media.video_max_size_kb')
+                                            ->label('Video max size (KB)')
+                                            ->numeric()->integer()->required()->minValue(1),
+                                        Forms\Components\TextInput::make('media.upload_max_attempts')
+                                            ->label('Uploads per minute (per user)')
+                                            ->numeric()->integer()->required()->minValue(1),
+                                    ])
+                                    ->columns(2),
+
+                                Forms\Components\Section::make('Storage quotas')
+                                    ->description('Per-category quota in MB. 0 means unlimited. Current usage is shown as a hint.')
+                                    ->schema(array_map(
+                                        fn (MediaCategory $category): Forms\Components\TextInput => Forms\Components\TextInput::make("media.quota_{$category->value}")
+                                            ->label($category->label().' (MB)')
+                                            ->numeric()->integer()->minValue(0)
+                                            ->default(0)
+                                            ->helperText(fn (): string => 'Currently used: '.app(MediaQuotaService::class)->usageMb($category).' MB'),
+                                        MediaCategory::cases(),
+                                    ))
+                                    ->columns(2),
+
+                                Forms\Components\Section::make('Antivirus')
+                                    ->description('Optional ClamAV scanning for every upload. Disabled by default.')
+                                    ->schema([
+                                        Forms\Components\Toggle::make('media.antivirus_enabled')
+                                            ->label('Scan uploads with ClamAV')
+                                            ->inline(false),
+                                        Forms\Components\TextInput::make('media.clamav_path')
+                                            ->label('ClamAV binary path')
+                                            ->maxLength(255),
+                                    ])
+                                    ->columns(2),
+                            ]),
+
                         Forms\Components\Tabs\Tab::make('Numbering')
                             ->schema([
                                 Forms\Components\TextInput::make('numbering.admission_prefix')
@@ -306,6 +415,46 @@ class ManageSettings extends Page implements HasForms
             $state['attendance']['min_percent'] = (float) $state['attendance']['min_percent'];
         }
 
+        foreach (['image_max_size_kb', 'document_max_size_kb', 'video_max_size_kb', 'upload_max_attempts'] as $mediaKey) {
+            if (isset($state['media'][$mediaKey])) {
+                $state['media'][$mediaKey] = (int) $state['media'][$mediaKey];
+            }
+        }
+
+        foreach (MediaCategory::cases() as $category) {
+            $quotaKey = "quota_{$category->value}";
+
+            if (array_key_exists($quotaKey, $state['media'] ?? [])) {
+                $state['media'][$quotaKey] = (int) $state['media'][$quotaKey];
+            }
+        }
+
+        if (array_key_exists('antivirus_enabled', $state['media'] ?? [])) {
+            $state['media']['antivirus_enabled'] = (bool) $state['media']['antivirus_enabled'];
+        }
+
+        foreach ([
+            'login_max_attempts',
+            'session_timeout_minutes',
+            'password_min_length',
+        ] as $securityKey) {
+            if (isset($state['security'][$securityKey])) {
+                $state['security'][$securityKey] = (int) $state['security'][$securityKey];
+            }
+        }
+
+        foreach ([
+            'password_mixed_case',
+            'password_numbers',
+            'password_symbols',
+            'password_uncompromised',
+            'two_factor_admin_required',
+        ] as $securityToggle) {
+            if (array_key_exists($securityToggle, $state['security'] ?? [])) {
+                $state['security'][$securityToggle] = (bool) $state['security'][$securityToggle];
+            }
+        }
+
         if (array_key_exists('notify_guardian_on_absent', $state['attendance'] ?? [])) {
             $state['attendance']['notify_guardian_on_absent'] = (bool) $state['attendance']['notify_guardian_on_absent'];
         }
@@ -316,6 +465,22 @@ class ManageSettings extends Page implements HasForms
         }
 
         return $state;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function diskOptionsFor(MediaCategory $category): array
+    {
+        $disks = array_keys(config('filesystems.disks', []));
+
+        if ($category->isPrivate()) {
+            $disks = array_values(array_intersect($disks, config('media.private_disks', [])));
+        }
+
+        return collect($disks)
+            ->mapWithKeys(fn (string $disk): array => [$disk => $disk])
+            ->all();
     }
 }
 

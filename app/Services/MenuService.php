@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\MenuLinkType;
 use App\Enums\MenuLocation;
+use App\Http\Middleware\SetPublicLocale;
 use App\Models\MenuItem;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -97,13 +98,33 @@ class MenuService
 
         return match ($type) {
             MenuLinkType::Section => array_key_exists($row['target'], $type->targets())
-                ? ($onHome ? '' : route('home')).'#'.$row['target']
+                ? ($onHome ? '' : $this->homeUrl()).'#'.$row['target']
                 : null,
             MenuLinkType::Page => array_key_exists($row['target'], $type->targets())
-                ? route($row['target'])
+                ? route($row['target'], ['locale' => $this->locale()])
                 : null,
             MenuLinkType::Custom => self::isSafeCustomUrl($row['target']) ? $row['target'] : null,
             default => null,
         };
+    }
+
+    /**
+     * Public routes live under `{locale}` — always pass it so links work from
+     * payment pages and other non-localized URLs that still render the site nav.
+     */
+    protected function homeUrl(): string
+    {
+        return route('home', ['locale' => $this->locale()]);
+    }
+
+    protected function locale(): string
+    {
+        $locale = app()->getLocale();
+
+        if (in_array($locale, SetPublicLocale::SUPPORTED, true)) {
+            return $locale;
+        }
+
+        return SetPublicLocale::preferred(request());
     }
 }

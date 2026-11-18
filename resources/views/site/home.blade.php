@@ -312,7 +312,12 @@
                 <h2 id="cta-title" class="mx-auto max-w-3xl text-balance text-3xl font-extrabold leading-tight tracking-tight sm:text-5xl">{{ __('site.cta.title') }}</h2>
                 <p class="mx-auto mt-5 max-w-2xl text-pretty text-lg text-white/90">{{ __('site.cta.text') }}</p>
                 <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
-                    <a href="{{ route('apply') }}" class="btn btn-light !px-8 !py-3.5 text-base">{{ __('site.cta.button') }} <x-heroicon-o-arrow-right class="size-5" aria-hidden="true" /></a>
+                    <a href="{{ route('register') }}" class="btn btn-light !px-8 !py-3.5 text-base">
+                        <x-heroicon-o-user-plus class="size-5" aria-hidden="true" /> {{ __('site.nav.register') }}
+                    </a>
+                    <a href="#courses" class="btn !border !border-white/40 !px-8 !py-3.5 text-base text-white hover:bg-white/15">
+                        {{ __('site.cta.button') }} <x-heroicon-o-arrow-right class="size-5" aria-hidden="true" />
+                    </a>
                     @if ($site['phone'])
                         <a href="tel:{{ preg_replace('/[^0-9+]/', '', $site['phone']) }}" class="btn !border !border-white/40 !px-8 !py-3.5 text-base text-white hover:bg-white/15">
                             <x-heroicon-o-phone class="size-5" aria-hidden="true" /> {{ $site['phone'] }}

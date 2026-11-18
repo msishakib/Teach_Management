@@ -44,6 +44,35 @@ return [
             'throw' => false,
         ],
 
+        /*
+         * Private documents. Never publicly reachable — files are streamed
+         * through a policy-checked controller using short-lived signed URLs.
+         */
+        'private' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'visibility' => 'private',
+            'throw' => false,
+        ],
+
+        /*
+         * S3-compatible cloud disk (Cloudflare R2, MinIO, AWS S3) used for
+         * uploaded videos. Falls back to the AWS_* variables when the CLOUD_*
+         * ones are not set.
+         */
+        'cloud' => [
+            'driver' => 's3',
+            'key' => env('CLOUD_ACCESS_KEY_ID', env('AWS_ACCESS_KEY_ID')),
+            'secret' => env('CLOUD_SECRET_ACCESS_KEY', env('AWS_SECRET_ACCESS_KEY')),
+            'region' => env('CLOUD_DEFAULT_REGION', env('AWS_DEFAULT_REGION', 'auto')),
+            'bucket' => env('CLOUD_BUCKET', env('AWS_BUCKET')),
+            'url' => env('CLOUD_URL', env('AWS_URL')),
+            'endpoint' => env('CLOUD_ENDPOINT', env('AWS_ENDPOINT')),
+            'use_path_style_endpoint' => env('CLOUD_USE_PATH_STYLE_ENDPOINT', env('AWS_USE_PATH_STYLE_ENDPOINT', false)),
+            'visibility' => 'private',
+            'throw' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
@@ -54,6 +83,20 @@ return [
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
+        ],
+
+        /*
+         * Optional Google Drive disk for off-site backups. Enable it by adding
+         * "google" to BACKUP_DISKS and filling the GOOGLE_DRIVE_* variables.
+         */
+        'google' => [
+            'driver' => 'google',
+            'clientId' => env('GOOGLE_DRIVE_CLIENT_ID'),
+            'clientSecret' => env('GOOGLE_DRIVE_CLIENT_SECRET'),
+            'refreshToken' => env('GOOGLE_DRIVE_REFRESH_TOKEN'),
+            'folder' => env('GOOGLE_DRIVE_FOLDER'),
+            'teamDriveId' => env('GOOGLE_DRIVE_TEAM_DRIVE_ID'),
+            'sharedFolderId' => env('GOOGLE_DRIVE_SHARED_FOLDER_ID'),
         ],
 
     ],

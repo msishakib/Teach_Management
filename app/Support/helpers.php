@@ -1,6 +1,21 @@
 <?php
 
+use App\Http\Middleware\SetPublicLocale;
 use App\Services\SettingsService;
+
+if (! function_exists('public_home_url')) {
+    /**
+     * Public homepage URL with an explicit locale (safe outside {locale} routes).
+     */
+    function public_home_url(?string $locale = null): string
+    {
+        $locale ??= in_array(app()->getLocale(), SetPublicLocale::SUPPORTED, true)
+            ? app()->getLocale()
+            : SetPublicLocale::preferred(request());
+
+        return route('home', ['locale' => $locale]);
+    }
+}
 
 if (! function_exists('setting')) {
     /**
@@ -41,6 +56,31 @@ if (! function_exists('site_number')) {
         $formatter->setAttribute(NumberFormatter::GROUPING_USED, $grouping ? 1 : 0);
 
         return (string) $formatter->format((float) $value);
+    }
+}
+
+if (! function_exists('course_duration')) {
+    /**
+     * Human-friendly duration from a number of seconds (e.g. "2h 15m").
+     */
+    function course_duration(int $seconds): string
+    {
+        if ($seconds <= 0) {
+            return '—';
+        }
+
+        $hours = intdiv($seconds, 3600);
+        $minutes = intdiv($seconds % 3600, 60);
+
+        if ($hours > 0 && $minutes > 0) {
+            return site_number($hours).'h '.site_number($minutes).'m';
+        }
+
+        if ($hours > 0) {
+            return site_number($hours).'h';
+        }
+
+        return site_number(max(1, $minutes)).'m';
     }
 }
 

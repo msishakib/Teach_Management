@@ -97,6 +97,16 @@ class NumberGeneratorService
         return $this->next(NumberSequenceType::ReceiveVoucher, $year);
     }
 
+    public function nextOrder(?int $year = null): string
+    {
+        return $this->next(NumberSequenceType::Order, $year);
+    }
+
+    public function nextRegistration(?int $year = null): string
+    {
+        return $this->next(NumberSequenceType::Registration, $year);
+    }
+
     protected function lockOrCreateSetting(string $group, string $key, mixed $default): Setting
     {
         $setting = Setting::query()

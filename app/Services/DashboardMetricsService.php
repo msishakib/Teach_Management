@@ -17,6 +17,7 @@ use App\Enums\StudentStatus;
 use App\Enums\VoucherType;
 use App\Enums\WeekDay;
 use App\Models\User;
+use App\Support\DateRange;
 use App\Support\LedgerAccounts;
 use App\Support\PortalAccess;
 use Carbon\Carbon;
@@ -57,8 +58,8 @@ class DashboardMetricsService
                 ->where('journal_entries.status', JournalEntryStatus::Posted->value)
                 ->where('journal_entries.voucher_type', VoucherType::Receipt->value)
                 ->where('accounts.is_cash_or_bank', true)
-                ->whereDate('journal_entries.entry_date', '>=', $yesterday)
-                ->whereDate('journal_entries.entry_date', '<=', $today)
+                ->where('journal_entries.entry_date', '>=', $yesterday)
+                ->where('journal_entries.entry_date', '<', DateRange::endExclusive($today))
                 ->selectRaw(
                     'COALESCE(SUM(CASE WHEN DATE(journal_entries.entry_date) = ? THEN journal_lines.debit ELSE 0 END), 0) as today_total,
                      COALESCE(SUM(CASE WHEN DATE(journal_entries.entry_date) = ? THEN journal_lines.debit ELSE 0 END), 0) as yesterday_total,
@@ -115,8 +116,8 @@ class DashboardMetricsService
                 ->where('journal_entries.status', JournalEntryStatus::Posted->value)
                 ->where('journal_entries.voucher_type', VoucherType::Receipt->value)
                 ->where('accounts.is_cash_or_bank', true)
-                ->whereDate('journal_entries.entry_date', '>=', $lastStart->toDateString())
-                ->whereDate('journal_entries.entry_date', '<=', $thisEnd->toDateString());
+                ->where('journal_entries.entry_date', '>=', $lastStart->toDateString())
+                ->where('journal_entries.entry_date', '<', DateRange::endExclusive($thisEnd->toDateString()));
 
             $dailyRows = $baseQuery()
                 ->groupBy(DB::raw($ymExpr), DB::raw($dayExpr))
@@ -216,8 +217,8 @@ class DashboardMetricsService
                 ->where('journal_entries.status', JournalEntryStatus::Posted->value)
                 ->where('accounts.type', AccountType::Expense->value)
                 ->where('accounts.is_group', false)
-                ->whereDate('journal_entries.entry_date', '>=', $lastStart)
-                ->whereDate('journal_entries.entry_date', '<=', $thisEnd)
+                ->where('journal_entries.entry_date', '>=', $lastStart)
+                ->where('journal_entries.entry_date', '<', DateRange::endExclusive($thisEnd))
                 ->selectRaw(
                     'COALESCE(SUM(CASE WHEN DATE(journal_entries.entry_date) >= ? AND DATE(journal_entries.entry_date) <= ? THEN (journal_lines.debit - journal_lines.credit) ELSE 0 END), 0) as this_month_expense,
                      COALESCE(SUM(CASE WHEN DATE(journal_entries.entry_date) >= ? AND DATE(journal_entries.entry_date) <= ? THEN (journal_lines.debit - journal_lines.credit) ELSE 0 END), 0) as last_month_expense',
@@ -399,7 +400,8 @@ class DashboardMetricsService
                     $join->on('students.id', '=', 'student_attendances.student_id')
                         ->whereNull('students.deleted_at');
                 })
-                ->whereDate('attendance_sessions.date', $today)
+                ->where('attendance_sessions.date', '>=', $today)
+                ->where('attendance_sessions.date', '<', DateRange::endExclusive($today))
                 ->selectRaw("
                     COUNT(DISTINCT attendance_sessions.id) as sessions_count,
                     COUNT(students.id) as total_marked,
@@ -444,7 +446,7 @@ class DashboardMetricsService
 
             $agg = DB::table('exams')
                 ->whereIn('exams.status', $statuses)
-                ->whereDate('exams.end_date', '>=', $today)
+                ->where('exams.end_date', '>=', $today)
                 ->selectRaw(
                     "COUNT(exams.id) as upcoming_count,
                      COALESCE(SUM(CASE WHEN exams.status = 'scheduled' THEN 1 ELSE 0 END), 0) as scheduled_count,
@@ -457,7 +459,7 @@ class DashboardMetricsService
                 ->join('batches', 'batches.id', '=', 'exams.batch_id')
                 ->leftJoin('exam_subjects', 'exam_subjects.exam_id', '=', 'exams.id')
                 ->whereIn('exams.status', $statuses)
-                ->whereDate('exams.end_date', '>=', $today)
+                ->where('exams.end_date', '>=', $today)
                 ->groupBy('exams.id', 'exams.name', 'exams.start_date', 'exams.end_date', 'exams.status', 'batches.name')
                 ->orderBy('exams.start_date')
                 ->orderBy('exams.id')
@@ -689,7 +691,8 @@ class DashboardMetricsService
                     $sub->select(DB::raw(1))
                         ->from('attendance_sessions')
                         ->whereColumn('attendance_sessions.batch_id', 'class_routines.batch_id')
-                        ->whereDate('attendance_sessions.date', $today)
+                        ->where('attendance_sessions.date', '>=', $today)
+                        ->where('attendance_sessions.date', '<', DateRange::endExclusive($today))
                         ->where('attendance_sessions.status', AttendanceSessionStatus::Finalized->value)
                         ->where(function ($matchSubject): void {
                             $matchSubject->whereColumn('attendance_sessions.subject_id', 'class_routines.subject_id')

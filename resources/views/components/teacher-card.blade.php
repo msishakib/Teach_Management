@@ -7,7 +7,14 @@
 <article data-reveal style="--d: {{ (int) $delay }}ms"
          {{ $attributes->class(['group glass overflow-hidden rounded-3xl transition duration-300 hover:-translate-y-1.5 hover:shadow-lift']) }}>
     <div class="relative aspect-[4/5] overflow-hidden bg-primary/10">
-        @if ($teacher['photo'])
+        @if (! empty($teacher['photo_media']))
+            <x-media-image
+                :media="$teacher['photo_media']"
+                :alt="$teacher['name']"
+                sizes="(max-width: 640px) 100vw, 480px"
+                class="size-full object-cover transition duration-500 group-hover:scale-105"
+            />
+        @elseif ($teacher['photo'])
             <img src="{{ public_image($teacher['photo']) }}" alt="{{ $teacher['name'] }}" width="480" height="600"
                  loading="lazy" decoding="async"
                  class="size-full object-cover transition duration-500 group-hover:scale-105">

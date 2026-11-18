@@ -235,10 +235,10 @@ class EditExam extends EditRecord
                 ->requiresConfirmation()
                 ->action(function () use ($workflow): void {
                     try {
-                        $result = $workflow->generateFees($this->exam(), Auth::user());
+                        $workflow->queueFees($this->exam(), Auth::user());
                         Notification::make()
-                            ->title('Exam fees generated')
-                            ->body("Created {$result['created']}, skipped {$result['skipped']}.")
+                            ->title('Exam fee generation queued')
+                            ->body('Invoices will be created in the background. Refresh in a moment to see progress.')
                             ->success()
                             ->send();
                     } catch (ValidationException $e) {

@@ -84,6 +84,8 @@ class PaymentVoucherResource extends Resource
                 Forms\Components\FileUpload::make('attachment')
                     ->directory('payment-vouchers')
                     ->visibility('private')
+                    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
+                    ->maxSize(10240)
                     ->nullable()
                     ->disabled(fn (?PaymentVoucher $record) => $record && ! $record->isDraft()),
                 Forms\Components\Textarea::make('narration')

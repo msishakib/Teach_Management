@@ -16,6 +16,7 @@
         'cta_label' => $banner->localized('cta_label'),
         'cta_url' => $safeUrl($banner->cta_url),
         'image' => $banner->image,
+        'media' => $banner->mediaFor(\App\Enums\MediaCategory::HomepageBanner),
     ])->values()->all();
 
     if ($slides === []) {
@@ -25,6 +26,7 @@
             'cta_label' => null,
             'cta_url' => null,
             'image' => null,
+            'media' => null,
         ]];
     }
 
@@ -37,7 +39,7 @@
     };
 
     $count = count($slides);
-    $hasImages = collect($slides)->contains(fn ($slide) => filled($slide['image']));
+    $hasImages = collect($slides)->contains(fn ($slide) => filled($slide['image']) || $slide['media'] !== null);
 @endphp
 
 <section class="relative isolate overflow-hidden" aria-labelledby="hero-title">
@@ -82,9 +84,13 @@
                         @endif
 
                         <div class="mt-9 flex flex-wrap items-center gap-3">
-                            <a href="{{ $slide['cta_url'] ?: route('apply') }}" class="btn btn-primary !px-7 !py-3.5 text-base">
+                            <a href="{{ $slide['cta_url'] ?: '#courses' }}" class="btn btn-primary !px-7 !py-3.5 text-base">
                                 {{ $slide['cta_label'] ?: __('site.hero.cta_primary') }}
                                 <x-heroicon-o-arrow-right class="size-5" aria-hidden="true" />
+                            </a>
+                            <a href="{{ route('register') }}" class="btn btn-ghost !px-7 !py-3.5 text-base">
+                                <x-heroicon-o-user-plus class="size-5" aria-hidden="true" />
+                                {{ __('site.nav.register') }}
                             </a>
                             <a href="#courses" class="btn btn-ghost !px-7 !py-3.5 text-base">{{ __('site.hero.cta_secondary') }}</a>
                         </div>
@@ -110,12 +116,24 @@
                 <div class="relative size-full overflow-hidden rounded-[1.8rem] sm:rounded-[2.3rem]">
                     @if ($hasImages)
                         @foreach ($slides as $i => $slide)
-                            @if ($slide['image'])
-                                <img src="{{ public_image($slide['image']) }}" alt="{{ $slide['title'] }}" width="800" height="1000"
-                                     @if ($i === 0) fetchpriority="high" loading="eager" @else loading="lazy" @endif
-                                     decoding="async"
-                                     class="absolute inset-0 size-full object-cover transition-opacity duration-700 {{ $i === 0 ? 'opacity-100' : 'opacity-0' }}"
-                                     :class="{ 'opacity-100': i === {{ $i }}, 'opacity-0': i !== {{ $i }} }">
+                            @if ($slide['media'] || $slide['image'])
+                                @if ($slide['media'])
+                                    <x-media-image
+                                        :media="$slide['media']"
+                                        :alt="$slide['title']"
+                                        sizes="(max-width: 1024px) 100vw, 800px"
+                                        :loading="$i === 0 ? 'eager' : 'lazy'"
+                                        :fetchpriority="$i === 0 ? 'high' : null"
+                                        class="absolute inset-0 size-full object-cover transition-opacity duration-700 {{ $i === 0 ? 'opacity-100' : 'opacity-0' }}"
+                                        ::class="{ 'opacity-100': i === {{ $i }}, 'opacity-0': i !== {{ $i }} }"
+                                    />
+                                @else
+                                    <img src="{{ public_image($slide['image']) }}" alt="{{ $slide['title'] }}" width="800" height="1000"
+                                         @if ($i === 0) fetchpriority="high" loading="eager" @else loading="lazy" @endif
+                                         decoding="async"
+                                         class="absolute inset-0 size-full object-cover transition-opacity duration-700 {{ $i === 0 ? 'opacity-100' : 'opacity-0' }}"
+                                         :class="{ 'opacity-100': i === {{ $i }}, 'opacity-0': i !== {{ $i }} }">
+                                @endif
                             @endif
                         @endforeach
                         <div class="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" aria-hidden="true"></div>

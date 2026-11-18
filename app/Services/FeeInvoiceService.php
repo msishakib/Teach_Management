@@ -12,6 +12,7 @@ use App\Models\Enrollment;
 use App\Models\Exam;
 use App\Models\FeeStructure;
 use App\Models\FeeType;
+use App\Models\JournalEntry;
 use App\Models\StudentInvoice;
 use App\Models\User;
 use App\Support\LedgerAccounts;
@@ -248,7 +249,7 @@ class FeeInvoiceService
         })->values();
     }
 
-    protected function postInvoiceRecognition(StudentInvoice $invoice, ?User $actor): \App\Models\JournalEntry
+    protected function postInvoiceRecognition(StudentInvoice $invoice, ?User $actor): JournalEntry
     {
         $receivable = LedgerAccounts::byCode(LedgerAccounts::STUDENT_RECEIVABLE);
         $defaultIncome = LedgerAccounts::byCode(LedgerAccounts::TUITION_FEE_INCOME);
@@ -319,26 +320,81 @@ class FeeInvoiceService
 
         $created = 0;
         $skipped = 0;
+        $afterEnrollmentId = 0;
+
+        do {
+            $chunk = $this->generateExamFeesChunk($exam, $afterEnrollmentId, 100, $actor, $examFeeType);
+
+            $created += $chunk['created'];
+            $skipped += $chunk['skipped'];
+            $afterEnrollmentId = (int) ($chunk['last_enrollment_id'] ?? 0);
+        } while ($chunk['processed'] >= 100 && $afterEnrollmentId > 0);
+
+        return compact('created', 'skipped');
+    }
+
+    /**
+     * Generate exam fee invoices for one chunk of active enrollments.
+     *
+     * @return array{processed: int, created: int, skipped: int, last_enrollment_id: int|null}
+     */
+    public function generateExamFeesChunk(
+        Exam $exam,
+        int $afterEnrollmentId = 0,
+        int $limit = 100,
+        ?User $actor = null,
+        ?FeeType $examFeeType = null,
+    ): array {
+        if (! $exam->hasFee()) {
+            throw ValidationException::withMessages([
+                'fee_amount' => 'Exam has no fee amount.',
+            ]);
+        }
+
+        $examFeeType ??= FeeType::query()
+            ->where('code', 'EXAM')
+            ->where('is_active', true)
+            ->first();
+
+        if (! $examFeeType) {
+            throw ValidationException::withMessages([
+                'fee_type' => 'Active fee type "Exam Fee" (EXAM) was not found.',
+            ]);
+        }
+
+        $created = 0;
+        $skipped = 0;
+        $processed = 0;
+        $lastEnrollmentId = null;
 
         Enrollment::query()
             ->where('batch_id', $exam->batch_id)
             ->where('status', EnrollmentStatus::Active)
+            ->where('id', '>', $afterEnrollmentId)
             ->orderBy('id')
-            ->chunkById(100, function (Collection $enrollments) use ($exam, $examFeeType, $actor, &$created, &$skipped) {
-                foreach ($enrollments as $enrollment) {
-                    $invoice = $this->generateExamFeeForEnrollment($enrollment, $exam, $examFeeType, $actor);
+            ->limit($limit)
+            ->get()
+            ->each(function (Enrollment $enrollment) use ($exam, $examFeeType, $actor, &$created, &$skipped, &$processed, &$lastEnrollmentId) {
+                $processed++;
+                $lastEnrollmentId = $enrollment->id;
 
-                    if ($invoice === null) {
-                        $skipped++;
-                    } elseif ($invoice->wasRecentlyCreated) {
-                        $created++;
-                    } else {
-                        $skipped++;
-                    }
+                $invoice = $this->generateExamFeeForEnrollment($enrollment, $exam, $examFeeType, $actor);
+
+                if ($invoice === null) {
+                    $skipped++;
+                } elseif ($invoice->wasRecentlyCreated) {
+                    $created++;
+                } else {
+                    $skipped++;
                 }
             });
 
-        return compact('created', 'skipped');
+        return [
+            'processed' => $processed,
+            'created' => $created,
+            'skipped' => $skipped,
+            'last_enrollment_id' => $lastEnrollmentId,
+        ];
     }
 
     public function generateExamFeeForEnrollment(

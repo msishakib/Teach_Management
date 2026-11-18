@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\EnrollmentSource;
 use App\Enums\EnrollmentStatus;
 use App\Filament\Concerns\HasStandardTable;
 use App\Filament\Resources\EnrollmentResource\Pages;
@@ -54,6 +55,15 @@ class EnrollmentResource extends Resource
                     ->required()
                     ->native(false)
                     ->default(EnrollmentStatus::Active),
+                Forms\Components\Select::make('enrolled_via')
+                    ->label('Enrolled via')
+                    ->options(EnrollmentSource::class)
+                    ->default(EnrollmentSource::Offline)
+                    ->native(false),
+                Forms\Components\DateTimePicker::make('expires_at')
+                    ->label('Access expires at')
+                    ->native(false)
+                    ->helperText('Leave empty for lifetime access.'),
             ]);
     }
 
@@ -82,6 +92,17 @@ class EnrollmentResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('enrolled_via')
+                    ->label('Via')
+                    ->badge()
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('expires_at')
+                    ->label('Expires')
+                    ->dateTime()
+                    ->placeholder('Lifetime')
+                    ->sortable()
+                    ->toggleable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
